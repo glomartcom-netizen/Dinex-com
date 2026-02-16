@@ -1,5 +1,116 @@
-import { useEffect, useState } from "react";
-import { ethers } from "ethers";
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DimeX Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+<style>
+body{margin:0;background:#000;color:#fff;font-family:Arial}
+.top{background:#111;padding:20px;display:flex;justify-content:space-between}
+.logo{color:gold;font-size:24px}
+.btn{background:gold;border:none;padding:12px 20px;border-radius:8px}
+
+.container{display:flex}
+.left{width:60%;padding:20px}
+.right{width:40%;padding:20px}
+
+.card{
+background:#111;
+padding:20px;
+border-radius:12px;
+margin:10px;
+}
+
+input{
+padding:10px;
+width:90%;
+margin:10px;
+background:#000;
+color:#fff;
+border:1px solid #333;
+}
+
+table{width:100%;margin-top:10px}
+td{padding:6px;border-bottom:1px solid #333}
+</style>
+</head>
+
+<body>
+
+<div class="top">
+<div class="logo">DimeX Dashboard</div>
+<button class="btn" onclick="connect()">Connect Wallet</button>
+</div>
+
+<div class="container">
+
+<!-- LEFT SIDE -->
+<div class="left">
+
+<div class="card"><h3>Total Stake</h3><div id="totalStake">0</div></div>
+<div class="card"><h3>Daily Reward</h3><div id="dailyReward">0</div></div>
+<div class="card"><h3>Direct Income</h3><div id="directIncome">0</div></div>
+<div class="card"><h3>Level Income</h3><div id="levelIncome">0</div></div>
+<div class="card"><h3>Total Income</h3><div id="totalIncome">0</div></div>
+<div class="card"><h3>Team Count</h3><div id="teamCount">0</div></div>
+
+<div class="card">
+<h3>Referral Link</h3>
+<div id="refLink"></div>
+</div>
+
+</div>
+
+<!-- RIGHT SIDE -->
+<div class="right">
+
+<!-- STAKE TOP -->
+<div class="card">
+<button class="btn" onclick="toggleStake()">STAKE</button>
+</div>
+
+<div id="stakeBox" style="display:none">
+
+<div class="card">
+<h3>Stake USDT</h3>
+<input id="usdtAmount" placeholder="Amount">
+<button onclick="approveUSDT()">Approve</button>
+<button onclick="stakeUSDT()">Stake</button>
+</div>
+
+<div class="card">
+<h3>Stake DX</h3>
+<input id="dxAmount" placeholder="Amount">
+<button onclick="approveDX()">Approve</button>
+<button onclick="stakeDX()">Stake</button>
+</div>
+
+</div>
+
+<!-- CLAIM -->
+<div class="card">
+<button class="btn" onclick="claim()">CLAIM</button>
+</div>
+
+<!-- DOWNLINE -->
+<div class="card">
+<h3>Downline Viewer</h3>
+<table id="teamTable"></table>
+</div>
+
+<!-- CLAIM HISTORY -->
+<div class="card">
+<h3>Claim History</h3>
+<table id="claimTable"></table>
+</div>
+
+</div>
+</div>
+
+<script>
+
+let provider, signer, staking, usdt, dx;
 
 const stakingAddress = "PASTE_STAKING";
 const dxAddress = "PASTE_DX";
@@ -9,143 +120,101 @@ const stakingABI = [
  "function stakeUSDT(uint amount,address ref)",
  "function stakeDX(uint amount,address ref)",
  "function claim()",
- "function userInfo(address) view returns(uint,uint,uint,uint,uint,uint)"
+ "function userInfo(address) view returns(uint,uint,uint,uint,uint,uint)",
+ "event Transfer(address indexed from,address indexed to,uint value)"
 ];
 
 const erc20ABI = [
- "function approve(address spender,uint amount) returns(bool)",
- "function balanceOf(address) view returns(uint)"
+ "function approve(address spender,uint amount) returns(bool)"
 ];
 
-export default function App(){
+function toggleStake(){
+ let box=document.getElementById("stakeBox");
+ box.style.display = box.style.display=="none"?"block":"none";
+}
 
-const [wallet,setWallet] = useState("");
-const [data,setData] = useState({});
-const [provider,setProvider]=useState();
-const [signer,setSigner]=useState();
-const [staking,setStaking]=useState();
-const [dx,setDX]=useState();
-const [usdt,setUSDT]=useState();
+function getRef(){
+ const p = new URLSearchParams(window.location.search);
+ return p.get("ref");
+}
 
 async function connect(){
 
 await window.ethereum.request({method:'eth_requestAccounts'});
+provider = new ethers.providers.Web3Provider(window.ethereum);
+signer = provider.getSigner();
 
-const prov = new ethers.providers.Web3Provider(window.ethereum);
-const sign = prov.getSigner();
+staking = new ethers.Contract(stakingAddress,stakingABI,signer);
+usdt = new ethers.Contract(usdtAddress,erc20ABI,signer);
+dx   = new ethers.Contract(dxAddress,erc20ABI,signer);
 
-setProvider(prov);
-setSigner(sign);
+let addr = await signer.getAddress();
 
-const st = new ethers.Contract(stakingAddress,stakingABI,sign);
-const dxC = new ethers.Contract(dxAddress,erc20ABI,sign);
-const usdtC = new ethers.Contract(usdtAddress,erc20ABI,sign);
+document.getElementById("refLink").innerHTML =
+window.location.origin+"?ref="+addr;
 
-setStaking(st);
-setDX(dxC);
-setUSDT(usdtC);
-
-const addr = await sign.getAddress();
-setWallet(addr);
-
-load(st,addr);
+loadData();
+loadClaims();
 }
 
-async function load(st,addr){
-const d = await st.userInfo(addr);
+async function loadData(){
 
-setData({
- stake: ethers.utils.formatUnits(d[0],18),
- daily: ethers.utils.formatUnits(d[1],18),
- total: ethers.utils.formatUnits(d[2],18),
- ref: ethers.utils.formatUnits(d[3],18),
- level: ethers.utils.formatUnits(d[4],18),
- pending: ethers.utils.formatUnits(d[5],18)
-});
+let addr = await signer.getAddress();
+let d = await staking.userInfo(addr);
+
+document.getElementById("totalStake").innerHTML = ethers.utils.formatUnits(d[0],18);
+document.getElementById("dailyReward").innerHTML = ethers.utils.formatUnits(d[1],18);
+document.getElementById("totalIncome").innerHTML = ethers.utils.formatUnits(d[2],18);
+document.getElementById("directIncome").innerHTML = ethers.utils.formatUnits(d[3],18);
+document.getElementById("levelIncome").innerHTML = ethers.utils.formatUnits(d[4],18);
 }
 
-async function approveUSDT(v){
-await usdt.approve(stakingAddress,ethers.utils.parseUnits(v,18));
+async function approveUSDT(){
+let amt = document.getElementById("usdtAmount").value;
+await usdt.approve(stakingAddress,ethers.utils.parseUnits(amt,18));
 }
 
-async function stakeUSDT(v){
-const ref = new URLSearchParams(window.location.search).get("ref") || ethers.constants.AddressZero;
-await staking.stakeUSDT(ethers.utils.parseUnits(v,18),ref);
-connect();
+async function approveDX(){
+let amt = document.getElementById("dxAmount").value;
+await dx.approve(stakingAddress,ethers.utils.parseUnits(amt,18));
+}
+
+async function stakeUSDT(){
+let amt = document.getElementById("usdtAmount").value;
+let ref = getRef() || "0x0000000000000000000000000000000000000000";
+await staking.stakeUSDT(ethers.utils.parseUnits(amt,18),ref);
+loadData();
+}
+
+async function stakeDX(){
+let amt = document.getElementById("dxAmount").value;
+let ref = getRef() || "0x0000000000000000000000000000000000000000";
+await staking.stakeDX(ethers.utils.parseUnits(amt,18),ref);
+loadData();
 }
 
 async function claim(){
 await staking.claim();
-connect();
+loadData();
+loadClaims();
 }
 
-useEffect(()=>{
-if(wallet && staking){
-const i = setInterval(()=>load(staking,wallet),5000);
-return ()=>clearInterval(i);
-}
-},[wallet,staking]);
+async function loadClaims(){
 
-return(
-<div className="bg-black min-h-screen text-white">
+let addr = await signer.getAddress();
+let filter = staking.filters.Transfer(stakingAddress,addr);
+let logs = await staking.queryFilter(filter,0,"latest");
 
-<div className="flex justify-between p-4 bg-gray-900">
-<h1 className="text-yellow-400 text-xl">DimeX Dashboard</h1>
-<button onClick={connect} className="bg-yellow-500 px-4 py-2 rounded">
-{wallet ? "Connected" : "Connect Wallet"}
-</button>
-</div>
+let table = document.getElementById("claimTable");
+table.innerHTML="";
 
-<div className="p-6 grid md:grid-cols-3 gap-4">
-
-<Card title="Total Stake" value={data.stake}/>
-<Card title="Daily Reward" value={data.daily}/>
-<Card title="Pending" value={data.pending}/>
-<Card title="Direct Income" value={data.ref}/>
-<Card title="Level Income" value={data.level}/>
-<Card title="Total Income" value={data.total}/>
-
-</div>
-
-<div className="p-6">
-
-<StakeBox onStake={stakeUSDT} onApprove={approveUSDT}/>
-<button onClick={claim} className="bg-green-500 px-6 py-3 rounded">
-Claim Rewards
-</button>
-
-</div>
-
-</div>
-);
+logs.forEach(l=>{
+ let row = table.insertRow();
+ row.insertCell(0).innerHTML = new Date().toLocaleString();
+ row.insertCell(1).innerHTML = ethers.utils.formatUnits(l.args.value,18);
+});
 }
 
-function Card({title,value}){
-return(
-<div className="bg-gray-900 p-4 rounded">
-<div className="text-gray-400">{title}</div>
-<div className="text-2xl text-yellow-400">{value}</div>
-</div>
-);
-}
-
-function StakeBox({onStake,onApprove}){
-const [amt,setAmt]=useState("");
-
-return(
-<div className="bg-gray-900 p-4 rounded">
-<input
-value={amt}
-onChange={e=>setAmt(e.target.value)}
-placeholder="Amount"
-className="bg-black p-2 mr-2"
-/>
-<button onClick={()=>onApprove(amt)} className="bg-blue-500 px-3 py-2 mr-2">
-Approve
-</button>
-<button onClick={()=>onStake(amt)} className="bg-yellow-500 px-3 py-2">
-Stake USDT
-</button>
-</div>
-);
-}
+</script>
+</body>
+ </html>
