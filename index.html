@@ -185,15 +185,6 @@ font-size:26px;
 
 </div>
 
-<!-- REF LINK -->
-<div class="card">
-<h3><i class="fa-solid fa-link"></i> Referral Link</h3>
-<input id="refInput" readonly>
-<button class="btn" onclick="copyRef()">
-<i class="fa-solid fa-copy"></i> Copy
-</button>
-</div>
-
 <!-- STAKE -->
 <button class="btn" onclick="toggleStake()">
 <i class="fa-solid fa-lock"></i> Stake
@@ -224,13 +215,22 @@ font-size:26px;
 <button class="btn">Claim</button>
 </div>
 
-<button class="btn" onclick="openHistory()">
-<i class="fa-solid fa-download"></i> VIEW DOWNLINE 
-</button>
-<button class="btn" onclick="openHistory()">
-<i class="fa-solid fa-clock"></i> CLAIM HISTORY 
+ <!-- REF LINK -->
+<div class="card">
+<h3><i class="fa-solid fa-link"></i> Referral Link</h3>
+<input id="refInput" readonly>
+<button class="btn" onclick="copyRef()">
+<i class="fa-solid fa-copy"></i> Copy
 </button>
 </div>
+ 
+<button class="btn">
+<i class="fa-solid fa-download"></i> View Downline
+</button>
+
+<button class="btn">
+<i class="fa-solid fa-clock"></i> Claim History
+</button>
 
 <!-- POPUPS -->
 <div class="popup" id="downlinePopup">
