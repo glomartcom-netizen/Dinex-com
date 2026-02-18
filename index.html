@@ -23,6 +23,26 @@ text-align:center;
 padding:20px 10px;
 }
 
+.footer{
+margin-top:40px;
+padding:25px 0;
+background:#000;
+border-top:1px solid #222;
+text-align:center;
+}
+
+.footLogo{
+color:gold;
+font-size:22px;
+font-weight:bold;
+}
+
+.footCopy{
+color:#777;
+font-size:14px;
+margin-top:6px;
+} 
+ 
 .logo{
 width:70px;
 display:block;
@@ -224,23 +244,24 @@ font-size:26px;
 </button>
 </div>
  
-<button class="btn">
+<button class="btn" onclick="openDownline()">
 <i class="fa-solid fa-download"></i> View Downline
 </button>
 
-<button class="btn">
+<button class="btn" onclick="openHistory()">
 <i class="fa-solid fa-clock"></i> Claim History
 </button>
 
-<!-- POPUPS -->
+<!-- DOWNLINE POPUP -->
 <div class="popup" id="downlinePopup">
 <div class="popupBox">
 <h3>Downline Tree</h3>
-<div id="downlineData">Loading...</div>
+<div id="downlineData">No data</div>
 <button class="btn" onclick="closePopup()">Close</button>
 </div>
 </div>
 
+<!-- HISTORY POPUP -->
 <div class="popup" id="historyPopup">
 <div class="popupBox">
 <h3>Claim History</h3>
@@ -275,9 +296,10 @@ document.getElementById("historyPopup").style.display="flex";
 }
 
 function closePopup(){
-document.querySelectorAll(".popup").forEach(p=>p.style.display="none");
+document.getElementById("downlinePopup").style.display="none";
+document.getElementById("historyPopup").style.display="none";
 }
-
+ 
 async function connect(){
 
 try{
@@ -335,6 +357,11 @@ function stakeDX(){alert("DMX Staked")}
 function claim(){alert("Claim sent")}
 
 </script>
-
+ 
+<div class="footer">
+  <div class="footLogo">DimeX</div>
+  <div class="footCopy">© 2026</div>
+</div>
+ 
 </body>
  </html>
