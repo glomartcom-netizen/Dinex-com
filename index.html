@@ -53,40 +53,40 @@ input{padding:12px;width:90%;background:#000;color:#fff;border:1px solid #333;bo
 <!-- STATS -->
 <div class="grid">
 
-<div class="box" onclick="openPop('Total Stake History')">
+<div class="box">
 <i class="fa-solid fa-coins" style="color:gold"></i>
 <div>Total Stake</div>
-<div class="value">1200</div>
+<div class="value">0</div>
 </div>
 
-<div class="box" onclick="openPop('Daily Rewards')">
+<div class="box">
 <i class="fa-solid fa-bolt" style="color:gold"></i>
-<div>Daily Rewards</div>
-<div class="value">25</div>
+<div>Daily Reward</div>
+<div class="value">0</div>
 </div>
 
-<div class="box" onclick="openPop('Direct Income')">
+<div class="box">
 <i class="fa-solid fa-user-plus" style="color:gold"></i>
 <div>Direct Income</div>
-<div class="value">300</div>
+<div class="value">0</div>
 </div>
 
-<div class="box" onclick="openPop('Level Income')">
+<div class="box">
 <i class="fa-solid fa-sitemap" style="color:gold"></i>
 <div>Level Income</div>
-<div class="value">540</div>
+<div class="value">0</div>
 </div>
 
-<div class="box" onclick="openPop('Total Income')">
+<div class="box">
 <i class="fa-solid fa-chart-line" style="color:gold"></i>
 <div>Total Income</div>
-<div class="value">840</div>
+<div class="value">0</div>
 </div>
 
-<div class="box" onclick="openPop('Team Count')">
+<div class="box">
 <i class="fa-solid fa-users" style="color:gold"></i>
 <div>Team Count</div>
-<div class="value">18</div>
+<div class="value">0</div>
 </div>
 
 </div>
@@ -109,13 +109,219 @@ Referral Link<br>
 <div class="card">
 <h3>USDT</h3>
 <input placeholder="Amount">
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DimeX Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+body{
+margin:0;
+background:#000;
+color:#fff;
+font-family:Arial;
+text-align:center;
+}
+
+/* HEADER */
+.header{
+padding:20px 10px;
+}
+
+.logo{
+width:70px;
+display:block;
+margin:auto;
+}
+
+.title{
+font-size:22px;
+color:gold;
+font-weight:bold;
+margin-top:5px;
+}
+
+/* BUTTON */
+.btn{
+background:gold;
+border:none;
+padding:12px 20px;
+border-radius:8px;
+font-weight:bold;
+font-size:15px;
+cursor:pointer;
+margin:10px auto;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:6px;
+min-width:200px;
+color:#000;
+}
+
+/* CARD */
+.card{
+background:#111;
+padding:18px;
+border-radius:14px;
+margin:14px auto;
+width:92%;
+max-width:480px;
+}
+
+/* GRID */
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:14px;
+width:92%;
+max-width:520px;
+margin:20px auto;
+}
+
+.box{
+background:#111;
+padding:16px;
+border-radius:12px;
+text-align:center;
+border:1px solid #1f1f1f;
+}
+
+.box i{
+color:gold;
+font-size:18px;
+margin-bottom:6px;
+}
+
+.value{
+color:gold;
+font-size:20px;
+margin-top:6px;
+font-weight:bold;
+}
+
+input{
+padding:14px;
+width:90%;
+margin:12px;
+background:#000;
+color:#fff;
+border:1px solid #333;
+border-radius:8px;
+font-size:16px;
+}
+
+/* DESKTOP VIEW */
+@media(min-width:900px){
+
+.grid{
+grid-template-columns:1fr 1fr 1fr;
+max-width:900px;
+}
+
+.card{
+max-width:600px;
+}
+
+.btn{
+min-width:260px;
+}
+
+.title{
+font-size:26px;
+}
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<img src="https://i.ibb.co/zVB8fHMD/logo.png" class="logo">
+<div class="title">DimeX Dashboard</div>
+</div>
+
+<button class="btn" onclick="connect()">
+<i class="fa-solid fa-wallet"></i> Connect Wallet
+</button>
+
+<div id="wallet"></div>
+<div id="status" style="color:gold"></div>
+
+<!-- INCOME BOXES -->
+<div class="grid">
+
+<div class="box">
+<i class="fa-solid fa-coins"></i>
+<div>Total Stake</div>
+<div id="totalStake" class="value">0</div>
+</div>
+
+<div class="box">
+<i class="fa-solid fa-bolt"></i>
+<div>Daily Reward</div>
+<div id="dailyReward" class="value">0</div>
+</div>
+
+<div class="box">
+<i class="fa-solid fa-chart-line"></i>
+<div>Total Income</div>
+<div id="totalIncome" class="value">0</div>
+</div>
+
+<div class="box">
+<i class="fa-solid fa-user-plus"></i>
+<div>Direct Income</div>
+<div id="directIncome" class="value">0</div>
+</div>
+
+<div class="box">
+<i class="fa-solid fa-sitemap"></i>
+<div>Level Income</div>
+<div id="levelIncome" class="value">0</div>
+</div>
+
+<div class="box">
+<i class="fa-solid fa-users"></i>
+<div>Team Count</div>
+<div id="teamCount" class="value">0</div>
+</div>
+
+</div>
+
+<!-- REF LINK -->
+<div class="card">
+<h3><i class="fa-solid fa-link"></i> Referral Link</h3>
+<input id="refInput" readonly>
+<button class="btn" onclick="copyRef()">
+<i class="fa-solid fa-copy"></i> Copy
+</button>
+</div>
+
+<!-- STAKE -->
+<button class="btn" onclick="toggleStake()">
+<i class="fa-solid fa-lock"></i> Stake
+</button>
+
+<div id="stakeBox" style="display:none">
+
+<div class="card">
+<h3>USDT Stake</h3>
+<input id="usdtAmount" placeholder="Amount">
 <button class="btn">Approve</button>
 <button class="btn">Stake</button>
 </div>
 
 <div class="card">
-<h3>DMX</h3>
-<input placeholder="Amount">
+<h3>DMX Stake</h3>
+<input id="dxAmount" placeholder="Amount">
 <button class="btn">Approve</button>
 <button class="btn">Stake</button>
 </div>
@@ -124,15 +330,13 @@ Referral Link<br>
 
 <!-- CLAIM -->
 <div class="card">
-<h3><i class="fa-solid fa-gift" style="color:gold"></i> Claim</h3>
-<div class="value">75</div>
-<button class="btn">CLAIM</button>
+<h3><i class="fa-solid fa-gift"></i> Claim</h3>
+<div id="claimAmount" class="value">0</div>
+<button class="btn">Claim</button>
 </div>
- 
-<!-- DOWNLINE -->
-<div class="card">
-<button class="btn" onclick="openDownline()">
-<i class="fa-solid fa-network-wired"></i> VIEW DOWNLINE
+
+<button class="btn" onclick="openHistory()">
+<i class="fa-solid fa-download"></i> VIEW DOWNLINE 
 </button>
 <button class="btn" onclick="openHistory()">
 <i class="fa-solid fa-clock"></i> CLAIM HISTORY 
