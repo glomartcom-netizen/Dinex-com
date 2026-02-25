@@ -3,396 +3,378 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DimeX Dashboard</title>
+<title>DimeX</title>
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
 
 <style>
 body{
 margin:0;
+font-family:Poppins;
 background:#000;
 color:#fff;
-font-family:Arial;
-text-align:center;
+line-height:1.7;
 }
 
-/* HEADER */
-.header{
-padding:20px 10px;
-}
-
-.footer{
-margin-top:40px;
-padding:25px 0;
-background:#000;
-border-top:1px solid #222;
-text-align:center;
-}
-
-.footLogo{
-color:gold;
-font-size:22px;
-font-weight:bold;
-}
-
-.footCopy{
-color:#777;
-font-size:14px;
-margin-top:6px;
-} 
-
-/* POPUP BACKGROUND */
-.popup{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.7);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:9999;
-}
-
-/* POPUP BOX */
-.popupBox{
-background:#111;
-padding:25px;
-border-radius:14px;
-width:90%;
-max-width:420px;
-text-align:center;
-border:1px solid #222;
-}
-
-/* fix button shift */
-.btn{
-position:relative;
-z-index:1;
-}
- 
-.logo{
-width:70px;
-display:block;
-margin:auto;
-}
-
-.title{
-font-size:22px;
-color:gold;
-font-weight:bold;
-margin-top:5px;
-}
-
-/* BUTTON */
-.btn{
-background:gold;
-border:none;
-padding:12px 20px;
-border-radius:8px;
-font-weight:bold;
-font-size:15px;
-cursor:pointer;
-margin:10px auto;
+.hero{
+min-height:100vh;
 display:flex;
 align-items:center;
 justify-content:center;
-gap:6px;
-min-width:200px;
-color:#000;
+text-align:center;
+padding:60px 20px;
+background:linear-gradient(rgba(0,0,0,0.85),rgba(0,0,0,0.95)),
+url("https://raw.githubusercontent.com/glomartcom-netizen/DimeXtest/main/image%20(7).webp");
+background-size:cover;
+background-position:center;
 }
 
-/* CARD */
-.card{
-background:#111;
-padding:18px;
-border-radius:14px;
-margin:14px auto;
-width:92%;
-max-width:480px;
+.hero h1{
+font-size:64px;
+color:gold;
+margin-bottom:10px;
 }
 
-/* GRID */
-.grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:14px;
-width:92%;
-max-width:520px;
-margin:20px auto;
+.hero p{
+max-width:900px;
+margin:auto;
+color:#ddd;
+}
+
+.buttons{
+margin-top:25px;
+}
+
+.buttons button{
+margin:10px;
+padding:15px 28px;
+border:none;
+background:gold;
+border-radius:10px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.section{
+padding:80px 10%;
+max-width:1200px;
+margin:auto;
+}
+
+.section h2{
+color:gold;
+margin-bottom:20px;
 }
 
 .box{
 background:#111;
-padding:16px;
+padding:25px;
 border-radius:12px;
-text-align:center;
-border:1px solid #1f1f1f;
+margin-top:20px;
 }
 
-.box i{
-color:gold;
-font-size:18px;
-margin-bottom:6px;
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
 }
 
-.value{
-color:gold;
-font-size:20px;
-margin-top:6px;
-font-weight:bold;
-}
-
-input{
-padding:14px;
-width:90%;
-margin:12px;
-background:#000;
-color:#fff;
+th,td{
 border:1px solid #333;
-border-radius:8px;
-font-size:16px;
+padding:12px;
+text-align:center;
 }
 
-/* DESKTOP VIEW */
-@media(min-width:900px){
+th{background:#111;color:gold}
 
-.grid{
-grid-template-columns:1fr 1fr 1fr;
-max-width:900px;
-}
-
-.card{
-max-width:600px;
-}
-
-.btn{
-min-width:260px;
-}
-
-.title{
-font-size:26px;
-}
-
+.footer{
+text-align:center;
+padding:40px;
+color:#777;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-<img src="https://i.ibb.co/zVB8fHMD/logo.png" class="logo">
-<div class="title">DimeX Dashboard</div>
+<!-- HERO -->
+<section class="hero">
+<div>
+<h1>DimeX (DMX)</h1>
+
+<p><b>A Liquidity-Driven Staking Ecosystem Built for Long-Term Token Strength</b></p>
+
+<p>
+DimeX is designed to create a sustainable liquidity foundation and transparent staking environment that supports long-term token value, strong market confidence, and scalable ecosystem growth on BNB Smart Chain.
+</p>
+
+<p>
+Through structured staking participation and strategic liquidity expansion, DimeX empowers users to contribute directly to ecosystem strength while earning rewards in a fully on-chain environment.
+</p>
+
+<div class="buttons">
+<button>Enter Dashboard</button>
+<button>Start Staking</button>
+<button>View Smart Contract</button>
 </div>
+</div>
+</section>
 
-<button class="btn" onclick="connect()">
-<i class="fa-solid fa-wallet"></i> Connect Wallet
-</button>
+<!-- INTRO -->
+<section class="section">
+<h2>INTRO STATEMENT</h2>
 
-<div id="wallet"></div>
-<div id="status" style="color:gold"></div>
+<p><b>DimeX is not just a token.</b></p>
 
-<!-- INCOME BOXES -->
-<div class="grid">
+<p>
+It is a structured liquidity-focused ecosystem built to support long-term sustainability, strong market structure, and transparent reward distribution.
+</p>
+
+<p>
+The platform integrates staking with liquidity growth to create a balanced environment where participation strengthens token stability and future scalability.
+</p>
 
 <div class="box">
-<i class="fa-solid fa-coins"></i>
-<div>Total Stake</div>
-<div id="totalStake" class="value">0</div>
+DimeX Project Overview<br>
+Token: DimeX (DMX)<br>
+Network: BNB Smart Chain<br>
+Contact: Bscscan Verified<br>
+Staking System: On chain Rewards + Secure Starting<br>
+Total supply: 1,000,000,000 DMX
 </div>
+</section>
 
-<div class="box">
-<i class="fa-solid fa-bolt"></i>
-<div>Daily Reward</div>
-<div id="dailyReward" class="value">0</div>
-</div>
+<!-- ABOUT -->
+<section class="section">
+<h2>ABOUT DimeX</h2>
 
-<div class="box">
-<i class="fa-solid fa-chart-line"></i>
-<div>Total Income</div>
-<div id="totalIncome" class="value">0</div>
-</div>
+<p>
+DimeX is a decentralized staking and liquidity ecosystem developed to build strong token fundamentals before aggressive market expansion.
+</p>
 
-<div class="box">
-<i class="fa-solid fa-user-plus"></i>
-<div>Direct Income</div>
-<div id="directIncome" class="value">0</div>
-</div>
+<p>
+The platform focuses on structured growth, sustainable rewards, and transparent blockchain operations.
+</p>
 
-<div class="box">
-<i class="fa-solid fa-sitemap"></i>
-<div>Level Income</div>
-<div id="levelIncome" class="value">0</div>
-</div>
+<p>
+Users participate by staking assets within the ecosystem, contributing to liquidity strength while receiving rewards for supporting platform growth.
+</p>
 
-<div class="box">
-<i class="fa-solid fa-users"></i>
-<div>Team Count</div>
-<div id="teamCount" class="value">0</div>
-</div>
+<p>
+By prioritizing liquidity and sustainability, DimeX aims to create a stable and scalable token environment designed for long-term development.
+</p>
+</section>
 
-</div>
+<!-- MISSION -->
+<section class="section">
+<h2>MISSION</h2>
+<p>
+To build a secure, transparent, and scalable staking ecosystem that strengthens liquidity, supports sustainable token growth, and delivers long-term value through decentralized participation.
+</p>
+</section>
 
-<!-- STAKE -->
-<button class="btn" onclick="toggleStake()">
-<i class="fa-solid fa-lock"></i> Stake
-</button>
+<!-- VISION -->
+<section class="section">
+<h2>VISION</h2>
+<p>
+To establish DimeX as a globally recognized staking and liquidity platform that promotes responsible growth, strong token fundamentals, and long-term ecosystem sustainability.
+</p>
+</section>
 
-<div id="stakeBox" style="display:none">
+<!-- CORE VALUES -->
+<section class="section">
+<h2>CORE VALUES</h2>
 
-<div class="card">
-<h3>USDT Stake</h3>
-<input id="usdtAmount" placeholder="Amount">
-<button class="btn">Approve</button>
-<button class="btn">Stake</button>
-</div>
+<div class="box">Security — Smart contract-based system designed for transparency and reliability.</div>
+<div class="box">Liquidity Strength — Focused on building strong liquidity before market expansion.</div>
+<div class="box">Sustainability — Structured rewards designed for long-term ecosystem health.</div>
+<div class="box">Transparency — All operations verifiable on blockchain.</div>
+<div class="box">Community Participation — User participation directly supports ecosystem growth.</div>
+</section>
 
-<div class="card">
-<h3>DMX Stake</h3>
-<input id="dxAmount" placeholder="Amount">
-<button class="btn">Approve</button>
-<button class="btn">Stake</button>
-</div>
+<!-- WHY STAKING -->
+<section class="section">
+<h2>WHY STAKING?</h2>
 
-</div>
+<p>DimeX staking is designed to strengthen liquidity and support long-term token value.</p>
 
-<!-- CLAIM -->
-<div class="card">
-<h3><i class="fa-solid fa-gift"></i> Claim</h3>
-<div id="claimAmount" class="value">0</div>
-<button class="btn">Claim</button>
-</div>
+<ul>
+<li>Users stake USDT or DMX</li>
+<li>Staked assets support liquidity growth</li>
+<li>Liquidity is added to market pools</li>
+<li>Strong liquidity supports token stability</li>
+<li>Users receive staking rewards</li>
+</ul>
 
- <!-- REF LINK -->
-<div class="card">
-<h3><i class="fa-solid fa-link"></i> Referral Link</h3>
-<input id="refInput" readonly>
-<button class="btn" onclick="copyRef()">
-<i class="fa-solid fa-copy"></i> Copy
-</button>
-</div>
- 
-<button class="btn" onclick="openDownline()">
-<i class="fa-solid fa-download"></i> View Downline
-</button>
+<p>
+This model creates a structured cycle where community participation strengthens liquidity, and liquidity supports token value.
+</p>
+</section>
 
-<button class="btn" onclick="openHistory()">
-<i class="fa-solid fa-clock"></i> Claim History
-</button>
+<!-- HOW REWARDS WORK -->
+<section class="section">
+<h2>HOW REWARDS WORK</h2>
 
-<!-- DOWNLINE POPUP -->
-<div class="popup" id="downlinePopup">
-<div class="popupBox">
-<h3>Downline Tree</h3>
-<div id="downlineData">No data</div>
-<button class="btn" onclick="closePopup()">Close</button>
-</div>
-</div>
+<p>Participants who stake receive rewards in DMX.</p>
 
-<!-- HISTORY POPUP -->
-<div class="popup" id="historyPopup">
-<div class="popupBox">
-<h3>Claim History</h3>
-<div id="historyData">No history</div>
-<button class="btn" onclick="closePopup()">Close</button>
-</div>
-</div>
+<ul>
+<li>Held for long-term value</li>
+<li>Swapped on PancakeSwap</li>
+<li>Converted to other assets</li>
+<li>Re-staked for compounding</li>
+</ul>
 
-<script>
+<p>This flexibility allows users to manage rewards based on their strategy.</p>
+</section>
 
-let provider, signer;
-const STAKING_ADDRESS="PASTE_STAKING_CONTRACT";
-const DX_TOKEN="PASTE_DMX_TOKEN";
-const USDT="0x55d398326f99059fF775485246999027B3197955";
+<!-- LIQUIDITY STRATEGY -->
+<section class="section">
+<h2>LIQUIDITY STRATEGY</h2>
 
-function toggleStake(){
-let b=document.getElementById("stakeBox");
-b.style.display=b.style.display=="none"?"block":"none";
-}
+<ul>
+<li>Strengthens token stability</li>
+<li>Improves market confidence</li>
+<li>Supports long-term value</li>
+<li>Enables future exchange growth</li>
+</ul>
+</section>
 
-function copyRef(){
-navigator.clipboard.writeText(document.getElementById("refInput").value);
-alert("Copied");
-}
+<!-- STAKING PROGRAM TABLE -->
+<section class="section">
+<h2>Staking Program</h2>
 
-function openDownline(){
-document.getElementById("downlinePopup").style.display="flex";
-}
+<p>Minimum Stake USDT: 25 USDT</p>
+<p>Minimum Stake DMX: 5000 DMX</p>
+<p>Minimum Claim: 100 DMX</p>
 
-function openHistory(){
-document.getElementById("historyPopup").style.display="flex";
-}
+<table>
+<tr><th>Duration</th><th>Daily</th><th>Total</th></tr>
+<tr><td>90 days</td><td>0.20%</td><td>18%</td></tr>
+<tr><td>180 days</td><td>0.25%</td><td>45%</td></tr>
+<tr><td>365 days</td><td>0.30%</td><td>109%</td></tr>
+</table>
+</section>
 
-function closePopup(){
-document.getElementById("downlinePopup").style.display="none";
-document.getElementById("historyPopup").style.display="none";
-}
- 
-async function connect(){
+<!-- DIRECT REFERRAL -->
+<section class="section">
+<h2>Direct Referral Income</h2>
 
-try{
+<p>Direct referral (10%)</p>
 
-let providerInstance;
+<table>
+<tr><th>Deposit</th><th>Reward</th></tr>
+<tr><td>10,000 DMX</td><td>1,000 DMX</td></tr>
+</table>
+</section>
 
-if(window.ethereum){
-providerInstance = new ethers.providers.Web3Provider(window.ethereum);
-await providerInstance.send("eth_requestAccounts", []);
-}else{
-const wc = await window.EthereumProvider.init({
-projectId:"62a73933d62534edcd2f54b8a06c4319",
-chains:[56],
-showQrModal:true,
-metadata:{name:"DimeX",description:"DimeX",url:window.location.origin,icons:["https://i.ibb.co/zVB8fHMD/logo.png"]}
-});
-await wc.enable();
-providerInstance=new ethers.providers.Web3Provider(wc);
-}
+<!-- LEVEL TABLE -->
+<section class="section">
+<h2>Level Commission</h2>
 
-provider=providerInstance;
-signer=provider.getSigner();
+<table>
+<tr><th>Level</th><th>Bonus</th></tr>
+<tr><td>1</td><td>30</td></tr>
+<tr><td>2</td><td>18</td></tr>
+<tr><td>3</td><td>10</td></tr>
+<tr><td>4</td><td>5</td></tr>
+<tr><td>5</td><td>3</td></tr>
+<tr><td>6</td><td>2</td></tr>
+<tr><td>7-10</td><td>1</td></tr>
+<tr><td>11-15</td><td>0.5</td></tr>
+<tr><td>16-20</td><td>0.25</td></tr>
+</table>
+</section>
 
-let addr=await signer.getAddress();
-document.getElementById("wallet").innerHTML="Wallet: "+addr;
+<!-- CARRY FORWARD -->
+<section class="section">
+<h2>Carry Forward System</h2>
 
-document.getElementById("refInput").value=
-window.location.origin+"?ref="+addr;
+<p>
+Direct Referral 10,000 DMX per month unlock condition.<br>
+Extra Direct Volume carries to next month.<br>
+50,000 DMX → 10,000 per month for 5 months.
+</p>
+</section>
 
-document.getElementById("status").innerHTML="Wallet Connected";
+<!-- SECURITY -->
+<section class="section">
+<h2>SECURITY & TRANSPARENCY</h2>
 
-loadData();
-setInterval(loadData,10000);
+<ul>
+<li>Smart contract-based system</li>
+<li>On-chain reward tracking</li>
+<li>Transparent transactions</li>
+<li>Decentralized participation</li>
+</ul>
+</section>
 
-}catch(e){
-alert("Wallet failed");
-}
+<!-- TOKEN UTILITY -->
+<section class="section">
+<h2>TOKEN UTILITY</h2>
 
-}
+<ul>
+<li>Staking participation</li>
+<li>Reward distribution</li>
+<li>Ecosystem growth</li>
+<li>Future platform utilities</li>
+</ul>
+</section>
 
-async function loadData(){
-document.getElementById("totalStake").innerHTML=Math.floor(Math.random()*1000);
-document.getElementById("dailyReward").innerHTML=Math.floor(Math.random()*50);
-document.getElementById("directIncome").innerHTML=Math.floor(Math.random()*200);
-document.getElementById("levelIncome").innerHTML=Math.floor(Math.random()*150);
-document.getElementById("totalIncome").innerHTML=Math.floor(Math.random()*500);
-document.getElementById("teamCount").innerHTML=Math.floor(Math.random()*20);
-document.getElementById("claimAmount").innerHTML=Math.floor(Math.random()*80);
-}
+<!-- ROADMAP -->
+<section class="section">
+<h2>FUTURE ROADMAP</h2>
 
-function approveUSDT(){alert("USDT Approved")}
-function stakeUSDT(){alert("USDT Staked")}
-function approveDX(){alert("DMX Approved")}
-function stakeDX(){alert("DMX Staked")}
-function claim(){alert("Claim sent")}
+<p><b>Phase 1 — Foundation</b><br>
+Token deployment<br>
+Platform launch<br>
+Staking activation</p>
 
-</script>
- 
-<div class="footer">
-  <div class="footLogo">DimeX</div>
-  <div class="footCopy">© 2026</div>
-</div>
- 
+<p><b>Phase 2 — Liquidity Growth</b><br>
+Liquidity pool expansion<br>
+Community onboarding<br>
+Market preparation</p>
+
+<p><b>Phase 3 — Ecosystem Expansion</b><br>
+DeFi integrations<br>
+Platform utilities<br>
+Strategic partnerships</p>
+
+<p><b>Phase 4 — Global Scaling</b><br>
+Exchange listings<br>
+Platform growth<br>
+Long-term sustainability</p>
+</section>
+
+<!-- FUTURE OUTLOOK -->
+<section class="section">
+<h2>FUTURE OUTLOOK</h2>
+
+<p>
+DimeX is structured for long-term ecosystem development.
+As liquidity strengthens and participation increases,
+the platform aims to expand its utility and market presence.
+</p>
+</section>
+
+<!-- DISCLAIMER -->
+<section class="section">
+<h2>DISCLAIMER</h2>
+
+<p>
+DimeX operates as a decentralized blockchain platform.
+Cryptocurrency markets involve risk and volatility.
+Users should conduct independent research before participating.
+</p>
+</section>
+
+<!-- CONTACT -->
+<section class="section">
+<h2>Contact</h2>
+<p>info@dimex.app</p>
+<p>www.dimex.app</p>
+</section>
+
+<div class="footer">© 2026 DimeX</div>
+
 </body>
- </html>
+</html>
