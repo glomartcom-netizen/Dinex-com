@@ -1116,7 +1116,7 @@ setInterval(async () => {
     } catch (err) {
         console.error("Interval Refresh Error:", err);
     }
-}, 5000);
+}, 10000);
 
          
 // ==============================
@@ -1198,21 +1198,44 @@ const txWrap = async (fn) => {
     
 
         // --- functions ---  
-        async function setRates() {   
+        async function setRates(){   
 
     const r90 = document.getElementById('r90').value;   
     const r180 = document.getElementById('r180').value;   
     const r365 = document.getElementById('r365').value;  
 
-    // ✅ GAS CHECK FIRST
+    // 🔹 VALIDATION
+    if(!r90 || !r180 || !r365){
+        alert("Enter all rates");
+        return;
+    }
+
+    if(r90 <= 0 || r180 <= 0 || r365 <= 0){
+        alert("Rates must be greater than 0");
+        return;
+    }
+
+    // 🔥 GAS CHECK
     const balance = await provider.getBalance(userAddress);
     if(balance.lt(ethers.utils.parseEther("0.003"))){
         alert("Not enough BNB for gas");
         return;
     }
 
-    // ✅ THEN TRANSACTION
-    await txWrap(contract.setDailyRate(r90, r180, r365));  
+    try{
+
+        await txWrap(
+            contract.setDailyRate(
+                Number(r90),
+                Number(r180),
+                Number(r365)
+            )
+        );
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }
 }
   
 async function updateMinStake(){
@@ -1228,6 +1251,13 @@ async function updateMinStake(){
     // 🔹 OPTIONAL LIMIT (safety)
     if(Number(val) < 100){
         alert("Too low (minimum 100 recommended)");
+        return;
+    }
+
+    // 🔥 GAS CHECK (NEW)
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
         return;
     }
 
