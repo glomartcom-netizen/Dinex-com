@@ -985,6 +985,30 @@ let topStakersData = [];
 let topTeamData = [];
 let topDirectData = [];
 let topEarnersData = [];
+
+// ✅ ADD THIS
+let swapModeText = "";
+let autoSwapText = "";
+
+function updateAdminStatus(){
+
+    if(!userAddress) return;
+
+    const short =
+    userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+
+    let text = "Verified: " + short;
+
+    if(swapModeText){
+        text += " " + swapModeText;
+    }
+
+    if(autoSwapText){
+        text += " " + autoSwapText;
+    }
+
+    document.getElementById("adminStatus").innerHTML = text;
+}
     
 // 1. Function to Update UI specifically
 async function handleUIUpdate(isConnected) {
@@ -1008,7 +1032,7 @@ async function handleUIUpdate(isConnected) {
 
         // Update Status Text
         if (statusText) {
-            statusText.innerText = "Verified Admin: " + userAddress;
+            updateAdminStatus();
             statusText.style.color = "#38bdf8";
         }
     } else {
@@ -1087,6 +1111,7 @@ setInterval(async () => {
             if (typeof loadLiquidity === "function") await loadLiquidity();
             if (typeof checkSwapStatus === "function") await checkSwapStatus();
             if (typeof checkAutoSwapStatus === "function") await checkAutoSwapStatus();
+            if (typeof loadMembersCount === "function") await loadMembersCount();
         }
     } catch (err) {
         console.error("Interval Refresh Error:", err);
@@ -1190,10 +1215,33 @@ const txWrap = async (fn) => {
     await txWrap(contract.setDailyRate(r90, r180, r365));  
 }
   
-async function updateMinStake() {  
-    const val = document.getElementById('minStakeInput').value;  
-    if(val) await txWrap(contract.setMinStake(val));  
-}  
+async function updateMinStake(){
+
+    const val = document.getElementById('minStakeInput').value.trim();
+
+    // 🔹 VALIDATION
+    if(!val || Number(val) <= 0){
+        alert("Enter valid Min Stake (e.g. 2500)");
+        return;
+    }
+
+    // 🔹 OPTIONAL LIMIT (safety)
+    if(Number(val) < 100){
+        alert("Too low (minimum 100 recommended)");
+        return;
+    }
+
+    try{
+
+        await txWrap(
+            contract.setMinStake(Number(val))
+        );
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }
+}
   
 // ==============================
 // 🔹 LIMITS (MIN CLAIM + CAP)
@@ -1712,7 +1760,8 @@ if(!res.ok){
 
 const data = await res.json();
 
-// 🔹 SAFE RENDER (no crash)
+const arr = data;
+
 topStakersData = [...arr].sort((a,b)=>b.stake-a.stake);
 topTeamData = [...arr].sort((a,b)=>b.teamVol-a.teamVol);
 topDirectData = [...arr].sort((a,b)=>b.directVol-a.directVol);
@@ -1737,14 +1786,53 @@ document.getElementById("topEarners").innerHTML = "";
 
 }
   
-// SWAP MODE CONTROL  
-  
-async function updateSwapMode(state){  
-  
-if(!contract) return;  
-  
-await txWrap(contract.togglePancakeSwap(state));  
-  
+async function updateSwapMode(state){
+
+    if(!contract) return;
+
+    try{
+
+        // 🔍 current mode
+        const current = await contract.pancakeSwapEnabled();
+
+        // ❌ SAME MODE BLOCK
+        if(current === state){
+            alert("Already in selected mode");
+            return;
+        }
+
+        // ⚠️ CONFIRM
+        const msg = state 
+        ? "Switch to PANCAKE MODE?"
+        : "Switch to INTERNAL SWAP?";
+
+        if(!confirm(msg)) return;
+
+        // 💰 GAS CHECK (optional but recommended)
+        const balance = await provider.getBalance(userAddress);
+        if(balance.lt(ethers.utils.parseEther("0.003"))){
+            alert("Low BNB for gas");
+            return;
+        }
+
+        // 🚀 TX
+        await txWrap(
+            contract.togglePancakeSwap(state)
+        );
+
+        // 🔥 INSTANT UI UPDATE
+        if(state){
+            swapModeText = "[PANCAKE MODE]";
+        }else{
+            swapModeText = "[INTERNAL SWAP]";
+        }
+
+        updateAdminStatus();
+
+    }catch(e){
+        console.error(e);
+        alert("Failed to update swap mode");
+    }
 }  
   
   
@@ -1806,22 +1894,27 @@ console.error("Liquidity load error",e);
   
 async function checkSwapStatus(){
 
-    const mode = await contract.pancakeSwapEnabled();
-    const wallet = await signer.getAddress();
+    if(!contract) return;
 
-    const statusEl = document.getElementById("adminStatus");
+    try{
 
-    let base = "Verified: " + wallet.slice(0,6) + "..." + wallet.slice(-4);
+        const mode = await contract.pancakeSwapEnabled();
 
-    if(mode){
-        base += " <span class='text-red-500'>[PANCAKE MODE]</span>";
-    }else{
-        base += " <span class='text-green-500'>[INTERNAL SWAP]</span>";
+        // 🔹 SAVE ONLY (NO UI DIRECT CHANGE)
+        if(mode){
+            swapModeText = "<span class='text-red-500'>[PANCAKE MODE]</span>";
+        }else{
+            swapModeText = "<span class='text-green-500'>[INTERNAL SWAP]</span>";
+        }
+
+        // 🔥 ONE PLACE UPDATE
+        updateAdminStatus();
+
+    }catch(e){
+        console.warn("Swap status error");
     }
-
-    statusEl.innerHTML = base; // ✅ ONLY BASE SET
-}
-  
+}  
+    
         // ---------- RENDER BOARD ----------  
 function renderBoard(id,data){  
   
@@ -2047,30 +2140,60 @@ await txWrap(contract.toggleManualPrice(!mode));
   }
 
 async function toggleAutoSwap(state){
+
     if(!contract) return;
-    await txWrap(contract.toggleAutoSwap(state));
+
+    try{
+
+        const current = await contract.autoSwapEnabled();
+
+        // ❌ SAME MODE BLOCK
+        if(current === state){
+            alert("Already in selected mode");
+            return;
+        }
+
+        // ⚠️ CONFIRM
+        const msg = state 
+        ? "Enable AUTO SWAP?"
+        : "Disable AUTO SWAP?";
+
+        if(!confirm(msg)) return;
+
+        await txWrap(contract.toggleAutoSwap(state));
+
+        // 🔥 INSTANT UPDATE
+        if(state){
+            autoSwapText = "<span class='text-yellow-400'>[AUTO SWAP ON]</span>";
+        }else{
+            autoSwapText = "<span class='text-gray-400'>[AUTO SWAP OFF]</span>";
+        }
+
+        updateAdminStatus();
+
+    }catch(e){
+        console.error(e);
+        alert("AutoSwap update failed");
+    }
 }
     
 async function checkAutoSwapStatus(){
 
-    if(!contract || !signer) return;
+    if(!contract) return;
 
     try{
+
         const mode = await contract.autoSwapEnabled();
 
-        const statusEl = document.getElementById("adminStatus");
-
-        // 🔥 duplicate remove
-        statusEl.innerHTML = statusEl.innerHTML.replace(/\[AUTO SWAP (ON|OFF)\]/g, "");
-
-        // 🔥 append only
+        // 🔹 SAVE ONLY
         if(mode){
-            statusEl.innerHTML += 
-            " <span class='text-yellow-400'>[AUTO SWAP ON]</span>";
+            autoSwapText = "<span class='text-yellow-400'>[AUTO SWAP ON]</span>";
         }else{
-            statusEl.innerHTML += 
-            " <span class='text-gray-400'>[AUTO SWAP OFF]</span>";
+            autoSwapText = "<span class='text-gray-400'>[AUTO SWAP OFF]</span>";
         }
+
+        // 🔥 SINGLE UI UPDATE
+        updateAdminStatus();
 
     }catch(e){
         console.warn("AutoSwap status error");
