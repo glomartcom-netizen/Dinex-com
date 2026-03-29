@@ -226,45 +226,63 @@ Refresh Stats
 </section>  
   
   
-<!-- MEMBERS -->  
-  
-<section class="admin-card p-8">  
-  
-<h2 class="text-xl font-black text-purple-400 mb-6">  
-👥 Members List  
-</h2>  
-  
-<div class="mb-3 text-sm text-gray-300">  
-Total Members: <span id="memberCount" class="text-white font-bold">0</span>  
-</div>  
-  
-<button onclick="loadMembers()"  
-class="bg-purple-600 px-6 py-3 rounded-xl text-white font-bold mb-4">  
-Load Members  
-</button>  
-  
-<div id="membersBox"  
-class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto">  
-No Data  
-</div>  
-  
-<div class="mt-6 space-y-3">  
-  
-<input id="searchUser"  
-placeholder="Search Wallet Address"  
-class="w-full p-3 rounded-xl">  
-  
-<button onclick="searchUser()"  
-class="bg-blue-600 px-6 py-2 rounded-xl text-white font-bold">  
-Search User  
-</button>  
-  
-<div id="userResult"  
-class="text-sm text-gray-300"></div>  
-  
-</div>  
-  
-</section>  
+<!-- 👥 MEMBERS + ACTIVITY (FINAL CLEAN) -->
+
+<section class="admin-card p-8">
+
+<h2 class="text-xl font-black text-purple-400 mb-6">
+👥 Members & Activity
+</h2>
+
+<!-- TOTAL -->
+<div class="mb-3 text-sm text-gray-300">
+Total Members: <span id="memberCount" class="text-white font-bold">0</span>
+</div>
+
+<!-- BUTTONS -->
+<div class="flex flex-wrap gap-3 mb-4">
+
+<button onclick="loadMembers()"
+class="bg-purple-600 px-4 py-2 rounded-xl text-white font-bold">
+Members
+</button>
+
+<button onclick="loadTransactions()"
+class="bg-yellow-600 px-4 py-2 rounded-xl text-white font-bold">
+Transactions
+</button>
+
+<button onclick="loadClaims()"
+class="bg-green-600 px-4 py-2 rounded-xl text-white font-bold">
+Claims
+</button>
+
+</div>
+
+<!-- DISPLAY -->
+<div id="membersBox"
+class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto">
+No Data
+</div>
+
+<!-- SEARCH -->
+<div class="mt-6 space-y-3">
+
+<input id="searchUser"
+placeholder="Search Wallet Address"
+class="w-full p-3 rounded-xl">
+
+<button onclick="searchUser()"
+class="bg-blue-600 px-6 py-2 rounded-xl text-white font-bold">
+Search User
+</button>
+
+<div id="userResult"
+class="text-sm text-gray-300"></div>
+
+</div>
+
+</section>
   
   
 <!-- TOP LEADERS -->  
@@ -306,66 +324,6 @@ Load Leaderboards
   
 </section>  
 
-<!-- ========================= -->
-<!-- 📦 DATA (SERVER READY) -->
-<!-- ========================= -->
-
-<section class="admin-card p-8 mt-10">
-
-<h2 class="text-xl font-black text-cyan-400 mb-6">
-📦 Data Explorer
-</h2>
-
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-<!-- MEMBERS -->
-<div>
-<h3 class="text-purple-400 font-bold mb-2">Members</h3>
-
-<button onclick="loadAllMembers()"
-class="bg-purple-600 px-4 py-2 rounded-lg text-white font-bold mb-2">
-Load Members
-</button>
-
-<div id="allMembersBox"
-class="bg-black/40 p-3 rounded-lg text-xs max-h-60 overflow-y-auto">
-Waiting...
-</div>
-</div>
-
-<!-- TRANSACTIONS -->
-<div>
-<h3 class="text-yellow-400 font-bold mb-2">Transactions</h3>
-
-<button onclick="loadTransactions()"
-class="bg-yellow-600 px-4 py-2 rounded-lg text-white font-bold mb-2">
-Load Transactions
-</button>
-
-<div id="txBox"
-class="bg-black/40 p-3 rounded-lg text-xs max-h-60 overflow-y-auto">
-Waiting...
-</div>
-</div>
-
-<!-- CLAIMS -->
-<div>
-<h3 class="text-green-400 font-bold mb-2">Claims</h3>
-
-<button onclick="loadClaims()"
-class="bg-green-600 px-4 py-2 rounded-lg text-white font-bold mb-2">
-Load Claims
-</button>
-
-<div id="claimBox"
-class="bg-black/40 p-3 rounded-lg text-xs max-h-60 overflow-y-auto">
-Waiting...
-</div>
-</div>
-
-</div>
-</section>        
-  
 <!-- MATRIX -->  
 <section class="admin-card p-8">  
   
@@ -938,7 +896,8 @@ clearInterval(reconnect);
     "function changeTreasury(address)",  
     "function postAnnouncement(string,string)",  
     "function getFullDashboardStats(address) view returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)",  
-    "function getMembersList() view returns(address[])",  
+    "function getMembersList() view returns(address[])", 
+    "function getClaimHistory(address) view returns (tuple(uint256 amount,uint256 timestamp)[])",       
     "function dmx() view returns (address)",  
     "function setMinStake(uint256)",  
     "function togglePancakeSwap(bool)",  
@@ -1348,149 +1307,208 @@ async function giveRank() {
     await txWrap(contract.giveRankReward(addr, amt, rank));   
 }  
           
+// ==============================
+// 👥 MEMBERS (SERVER ONLY)
+// ==============================
 async function loadMembers(){  
-  
-const members = await fetchSafe(
-    "/api/members",
-    () => contract.getMembersList()
-);  
-  
-let html="";  
-  
-for(let i=0;i<members.length;i++){  
-  
-html += `<div>${i+1}. ${members[i]}</div>`;  
-  
-}  
-  
-document.getElementById("membersBox").innerHTML = html;  
-  
+
+try{
+
+const res = await fetch("/api/members");
+
+if(!res.ok){
+    throw new Error("Server not ready");
+}
+
+const members = await res.json();
+
+let html = "";
+
+for(let i=0; i<members.length; i++){
+
+    const m = members[i];
+
+    html += `
+    <div class="border-b border-white/10 py-2">
+    #${i+1}<br>
+    📅 ${m.date || "-"} ⏰ ${m.time || "-"}<br>
+    👛 ${m.addr?.slice(0,6)}...${m.addr?.slice(-4)}<br>
+    💰 ${m.amount || "-"}
+    </div>
+    `;
+}
+
+document.getElementById("membersBox").innerHTML = html;
+
+}catch(e){
+
+console.warn("Members:", e.message);
+
+document.getElementById("membersBox").innerHTML =
+"⚠️ Waiting for server...";
+
+}
+
 loadMembersCount();  
-  
-}  
-  
-  
+
+}
+
+
+// ==============================
+// 👥 MEMBER COUNT (SERVER ONLY)
+// ==============================
 async function loadMembersCount(){  
+
+try{
+
+const res = await fetch("/api/memberCount");
+
+if(!res.ok){
+    throw new Error("Server not ready");
+}
+
+const count = await res.json();
+
+document.getElementById("memberCount").innerText = count;
+
+}catch(e){
+
+console.warn("MemberCount:", e.message);
+
+document.getElementById("memberCount").innerText = "...";
+
+}
+
+}
   
-const count = await fetchSafe(
-    "/api/memberCount",
-    () => contract.getMembersCount()
-);  
-  
-document.getElementById("memberCount").innerText = count;  
-  
-}  
-  
-  
-// ---------- SEARCH USER ----------  
-async function searchUser(){  
-  
-try{  
-  
-const addr = document.getElementById("searchUser").value;  
-  
-if(!ethers.utils.isAddress(addr)){  
-alert("Invalid wallet address");  
-return;  
-}  
-  
-const data = await contract.getFullDashboardStats(addr);  
-  
-document.getElementById("userResult").innerHTML =  
-`<div class="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">  
-  
-<p>Total Staked: <span class="text-white">${ethers.utils.formatEther(data[0])} DMX</span></p>  
-  
-<p>Total Earned: <span class="text-white">${ethers.utils.formatEther(data[1])} DMX</span></p>  
-  
-<p>Direct Income: <span class="text-white">${ethers.utils.formatEther(data[2])} DMX</span></p>  
-  
-<p>Level Income: <span class="text-white">${ethers.utils.formatEther(data[3])} DMX</span></p>  
-  
-<p>Direct Business: <span class="text-white">${ethers.utils.formatEther(data[4])} DMX</span></p>  
-  
-<p>Team Business: <span class="text-white">${ethers.utils.formatEther(data[5])} DMX</span></p>  
-  
-<p>Claimable: <span class="text-white">${ethers.utils.formatEther(data[7])} DMX</span></p>  
-  
-<p class="text-yellow-400 font-bold">  
-Income Cap: ${ethers.utils.formatEther(data[8])} DMX  
-</p>  
-  
-</div>`;  
-      
-}catch(e){  
-  
-alert("User not found");  
-  
-}  
-  
-}  
-  
-  
-// ---------- LOAD LEADERBOARDS ----------  
-async function loadLeaderboards(){  
-  
-try{  
-  
-document.getElementById("topStakers").innerHTML="Loading Leaderboards...";  
-document.getElementById("topTeam").innerHTML="";  
-document.getElementById("topDirect").innerHTML="";  
-document.getElementById("topEarners").innerHTML="";  
-  
-const members = await fetchSafe(
-    "/api/members",
-    () => contract.getMembersList()
-); 
-  
-let arr = [];  
-  
-for(let i=0;i<members.length;i++){  
-  
-await new Promise(r=>setTimeout(r,25));  
-  
-const data = await fetchSafe(
-    "/api/userStats?addr=" + members[i],
-    () => contract.getFullDashboardStats(members[i])
-);  
-  
-arr.push({  
-  
-addr:members[i],  
-  
-stake:parseFloat(ethers.utils.formatEther(data[0])),  
-  
-earned:parseFloat(ethers.utils.formatEther(data[1])),  
-  
-directVol:parseFloat(ethers.utils.formatEther(data[4])),  
-  
-teamVol:parseFloat(ethers.utils.formatEther(data[5])),  
-  
-claimable:parseFloat(ethers.utils.formatEther(data[7])),  
-  
-cap:parseFloat(ethers.utils.formatEther(data[8]))  
-  
-});  
-  
-}  
-  
-renderBoard("topStakers",[...arr].sort((a,b)=>b.stake-a.stake));  
-  
-renderBoard("topTeam",[...arr].sort((a,b)=>b.teamVol-a.teamVol));  
-  
-renderBoard("topDirect",[...arr].sort((a,b)=>b.directVol-a.directVol));  
-  
-renderBoard("topEarners",[...arr].sort((a,b)=>b.earned-a.earned));  
-  
-}  
-  
-catch(e){  
-  
-console.error("Leaderboard load error",e);  
-  
-}  
-  
-}  
+    
+// ==============================
+// 🔍 SEARCH USER (SERVER ONLY)
+// ==============================
+async function searchUser(){
+
+try{
+
+const addr = document.getElementById("searchUser").value;
+
+if(!ethers.utils.isAddress(addr)){
+alert("Invalid wallet address");
+return;
+}
+
+// 🔹 SERVER CALL
+const res = await fetch(`/api/user?addr=${addr}`);
+
+if(!res.ok){
+    throw new Error("User not found");
+}
+
+const data = await res.json();
+
+// 🔹 CLAIM HISTORY FORMAT
+let claimHTML = "";
+
+if(data.claims && data.claims.length > 0){
+
+for(let i = data.claims.length - 1; i >= 0 && i > data.claims.length - 6; i--){
+
+    const c = data.claims[i];
+
+    claimHTML += `
+    <div class="text-xs text-gray-300">
+    ${c.amount} DMX | ${c.time}
+    </div>
+    `;
+}
+
+}else{
+claimHTML = "<div>No claim history</div>";
+}
+
+// 🔹 UI RENDER
+document.getElementById("userResult").innerHTML = `
+<div class="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg space-y-1">
+
+<p>Total Staked: <span class="text-white">${data.totalStaked} DMX</span></p>
+
+<p>Total Earned: <span class="text-white">${data.totalEarned} DMX</span></p>
+
+<p>Direct Income: <span class="text-white">${data.directIncome} DMX</span></p>
+
+<p>Level Income: <span class="text-white">${data.levelIncome} DMX</span></p>
+
+<p>Direct Business: <span class="text-white">${data.directVol} DMX</span></p>
+
+<p>Team Business: <span class="text-white">${data.teamVol} DMX</span></p>
+
+<p>Claimable: <span class="text-white">${data.claimable} DMX</span></p>
+
+<p class="text-yellow-400 font-bold">
+Income Cap: ${data.cap} DMX
+</p>
+
+<hr class="border-white/10 my-2">
+
+<p class="text-green-400 font-bold">Recent Claims:</p>
+
+${claimHTML}
+
+</div>
+`;
+
+}catch(e){
+
+console.warn("Search:", e.message);
+
+document.getElementById("userResult").innerHTML =
+"⚠️ Waiting for server...";
+
+}
+
+}
+    
+// ==============================
+// 🔥 LEADERBOARD (SERVER ONLY)
+// ==============================
+async function loadLeaderboards(){
+
+try{
+
+// 🔹 LOADING UI
+document.getElementById("topStakers").innerHTML = "Loading...";
+document.getElementById("topTeam").innerHTML = "";
+document.getElementById("topDirect").innerHTML = "";
+document.getElementById("topEarners").innerHTML = "";
+
+// 🔹 SERVER CALL ONLY
+const res = await fetch("/api/leaderboard");
+
+// 🔹 SERVER NOT READY → SAFE EXIT
+if(!res.ok){
+    throw new Error("Server not ready");
+}
+
+const data = await res.json();
+
+// 🔹 SAFE RENDER (no crash)
+renderBoard("topStakers", data.topStakers || []);
+renderBoard("topTeam", data.topTeam || []);
+renderBoard("topDirect", data.topDirect || []);
+renderBoard("topEarners", data.topEarners || []);
+
+}catch(e){
+
+console.warn("Leaderboard:", e.message);
+
+// 🔹 SAFE UI (no error break)
+document.getElementById("topStakers").innerHTML = "⚠️ Waiting for server...";
+document.getElementById("topTeam").innerHTML = "";
+document.getElementById("topDirect").innerHTML = "";
+document.getElementById("topEarners").innerHTML = "";
+
+}
+
+}
   
 // SWAP MODE CONTROL  
   
@@ -1833,46 +1851,6 @@ async function checkAutoSwapStatus(){
 }
 
 // ==============================
-// 📦 MEMBERS (FULL LIST)
-// ==============================
-async function loadAllMembers(){
-
-try{
-const res = await fetch("/api/members");
-const data = await res.json();
-
-if(!data.length){
-document.getElementById("allMembersBox").innerHTML = "No Data";
-return;
-}
-
-let html = "";
-
-data.forEach((m,i)=>{
-
-const shortAddr = m.addr.slice(0,6) + "..." + m.addr.slice(-4);
-
-html += `
-<div class="border-b border-white/10 py-2">
-#${i+1}<br>
-📅 ${m.date} ⏰ ${m.time}<br>
-👛 ${shortAddr}<br>
-💰 ${m.amount}
-</div>
-`;
-
-});
-
-document.getElementById("allMembersBox").innerHTML = html;
-
-}catch(e){
-document.getElementById("allMembersBox").innerHTML = "Server Not Connected";
-}
-
-}
-
-
-// ==============================
 // 💰 TRANSACTIONS
 // ==============================
 async function loadTransactions(){
@@ -1882,30 +1860,26 @@ const res = await fetch("/api/transactions");
 const data = await res.json();
 
 if(!data.length){
-document.getElementById("txBox").innerHTML = "No Data";
+document.getElementById("membersBox").innerHTML = "No Transactions";
 return;
 }
 
 let html = "";
 
 data.forEach(t=>{
-
-const shortAddr = t.addr.slice(0,6) + "..." + t.addr.slice(-4);
-
 html += `
 <div class="border-b border-white/10 py-2">
 📅 ${t.date} ⏰ ${t.time}<br>
-👛 ${shortAddr}<br>
+👛 ${t.addr.slice(0,6)}...${t.addr.slice(-4)}<br>
 💰 ${t.amount}
 </div>
 `;
-
 });
 
-document.getElementById("txBox").innerHTML = html;
+document.getElementById("membersBox").innerHTML = html;
 
 }catch(e){
-document.getElementById("txBox").innerHTML = "Server Not Connected";
+document.getElementById("membersBox").innerHTML = "Server Not Connected";
 }
 
 }
@@ -1921,33 +1895,29 @@ const res = await fetch("/api/claims");
 const data = await res.json();
 
 if(!data.length){
-document.getElementById("claimBox").innerHTML = "No Data";
+document.getElementById("membersBox").innerHTML = "No Claims";
 return;
 }
 
 let html = "";
 
 data.forEach(c=>{
-
-const shortAddr = c.addr.slice(0,6) + "..." + c.addr.slice(-4);
-
 html += `
 <div class="border-b border-white/10 py-2">
 📅 ${c.date} ⏰ ${c.time}<br>
-👛 ${shortAddr}<br>
+👛 ${c.addr.slice(0,6)}...${c.addr.slice(-4)}<br>
 💰 ${c.amount}
 </div>
 `;
-
 });
 
-document.getElementById("claimBox").innerHTML = html;
+document.getElementById("membersBox").innerHTML = html;
 
 }catch(e){
-document.getElementById("claimBox").innerHTML = "Server Not Connected";
+document.getElementById("membersBox").innerHTML = "Server Not Connected";
 }
 
-    }    
+}
    
           
 </script>  
