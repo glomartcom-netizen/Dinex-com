@@ -226,7 +226,7 @@ Refresh Stats
 </section>  
   
   
-<!-- 👥 MEMBERS + ACTIVITY (FINAL CLEAN) -->
+<!-- 👥 MEMBERS + ACTIVITY (FINAL CLEAN FIXED) -->
 
 <section class="admin-card p-8">
 
@@ -257,7 +257,6 @@ class="bg-green-600 px-4 py-2 rounded-xl text-white font-bold">
 Claims
 </button>
 
-<!-- 🔥 ADD THIS BUTTON -->
 <button onclick="openFullView(lastMembersData)"
 class="bg-indigo-600 px-4 py-2 rounded-xl text-white font-bold">
 Full View
@@ -265,10 +264,24 @@ Full View
 
 </div>
 
-<!-- DISPLAY -->
+<!-- MEMBERS LIST -->
 <div id="membersBox"
 class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto">
 No Data
+</div>
+
+<!-- 📊 TRANSACTIONS -->
+<p class="text-xs text-yellow-400 mt-3">📊 Transactions</p>
+<div id="txBox"
+class="bg-black/40 p-4 rounded-xl text-sm mt-2">
+No Transactions
+</div>
+
+<!-- 🪙 CLAIMS -->
+<p class="text-xs text-green-400 mt-3">🪙 Claims</p>
+<div id="claimBox"
+class="bg-black/40 p-4 rounded-xl text-sm mt-2">
+No Claims
 </div>
 
 <!-- DOWNLOAD -->
@@ -1269,13 +1282,41 @@ async function setBonuses() {
     alert("Bonuses Updated ✅");
 }
   
-async function manualReward() {  
-    const addr = document.getElementById("rewardAddr").value;  
-    const amt = document.getElementById("rewardAmt").value;  
-    const reason = document.getElementById("rewardReason").value;  
-    // Contract logic handles * 1 ether  
-    await txWrap(contract.manualReward(addr, amt, reason));  
-}  
+async function manualReward(){
+
+    const addr = document.getElementById("rewardAddr").value.trim();
+    const amt = document.getElementById("rewardAmt").value.trim();
+    const reason = document.getElementById("rewardReason").value.trim();
+
+    // 🔐 ADDRESS CHECK
+    if(!ethers.utils.isAddress(addr)){
+        alert("Invalid wallet address");
+        return;
+    }
+
+    // 💰 AMOUNT CHECK
+    if(!amt || Number(amt) <= 0){
+        alert("Enter valid amount");
+        return;
+    }
+
+    // 📝 REASON CHECK
+    if(!reason){
+        alert("Enter reward reason");
+        return;
+    }
+
+    try{
+
+        await txWrap(
+            contract.manualReward(addr, Number(amt), reason)
+        );
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }
+}
   
 // 🔹 LEVEL %
 async function setLevelPct(){
@@ -1322,12 +1363,41 @@ async function setLevelRule(){
     alert("Unlock Rule Applied ✅");
 }
   
-async function giveRank() {   
-    const addr = document.getElementById('uAddr').value;  
-    const amt = document.getElementById('rankAmt').value;   
-    const rank = document.getElementById('rankName').value;  
-    await txWrap(contract.giveRankReward(addr, amt, rank));   
-}  
+async function giveRank(){
+
+    const addr = document.getElementById('uAddr').value.trim();
+    const amt = document.getElementById('rankAmt').value.trim();
+    const rank = document.getElementById('rankName').value.trim();
+
+    // 🔐 ADDRESS CHECK
+    if(!ethers.utils.isAddress(addr)){
+        alert("Invalid wallet address");
+        return;
+    }
+
+    // 💰 AMOUNT CHECK
+    if(!amt || Number(amt) <= 0){
+        alert("Enter valid reward amount");
+        return;
+    }
+
+    // 🏆 RANK CHECK
+    if(!rank){
+        alert("Enter rank name");
+        return;
+    }
+
+    try{
+
+        await txWrap(
+            contract.giveRankReward(addr, Number(amt), rank)
+        );
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }
+}
           
 // ==============================
 // 🔐 GLOBAL STATE
