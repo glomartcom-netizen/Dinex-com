@@ -1041,7 +1041,7 @@ async function handleUIUpdate(isConnected) {
         btn.style.backgroundColor = ""; 
         if (panel) {
             panel.style.opacity = "0.2";
-            panel.style.pointerEvents = "auto";
+            panel.style.pointerEvents = "none";
         }
     }
 }
@@ -1251,31 +1251,56 @@ async function setLimits() {
     const minClaim = document.getElementById('minClaim')?.value;  
     const incCap = document.getElementById('incCap')?.value;  
 
-    // 🔹 MIN CLAIM
-    if(minClaim){
-        if(minClaim <= 0){
-            alert("Invalid Min Claim");
-            return;
-        }
-        await txWrap(contract.setMinClaim(Number(minClaim)));
+    // 🔒 EMPTY CHECK
+    if(!minClaim && !incCap){
+        alert("Enter at least one value");
+        return;
     }
 
-    // 🔹 INCOME CAP
-    if(incCap){
-        if(incCap <= 0){
-            alert("Invalid Income Cap (ex: 4)");
-            return;
-        }
-
-        if(incCap > 10){
-            alert("Too high (Max 10 recommended)");
-            return;
-        }
-
-        await txWrap(contract.setIncomeCap(Number(incCap)));
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
     }
 
-    alert("Limits Updated ✅");
+    try{
+
+        // 🔹 MIN CLAIM
+        if(minClaim){
+            if(minClaim <= 0){
+                alert("Invalid Min Claim");
+                return;
+            }
+
+            await txWrap(
+                contract.setMinClaim(Number(minClaim))
+            );
+        }
+
+        // 🔹 INCOME CAP
+        if(incCap){
+            if(incCap <= 0){
+                alert("Invalid Income Cap (ex: 4)");
+                return;
+            }
+
+            if(incCap > 10){
+                alert("Too high (Max 10 recommended)");
+                return;
+            }
+
+            await txWrap(
+                contract.setIncomeCap(Number(incCap))
+            );
+        }
+
+        alert("Limits Updated ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Update failed");
+    }
 }
 
 
@@ -1286,18 +1311,49 @@ async function setPrice() {
 
     const price = document.getElementById('manPrice')?.value;
 
-    if(!price || price <= 0){
+    // 🔒 VALIDATION
+    if(!price || Number(price) <= 0){
         alert("Enter valid price");
         return;
     }
 
-    await txWrap(
-        contract.setManualPrice(
-            ethers.utils.parseUnits(price.toString(), 18)
-        )
-    );
+    // 🔒 LIMIT (optional safety)
+    if(Number(price) > 100){
+        alert("Price too high");
+        return;
+    }
 
-    alert("Price Updated ✅");
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        // 🔥 DISABLE BUTTON (prevent double click)
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        await txWrap(
+            contract.setManualPrice(
+                ethers.utils.parseUnits(price.toString(), 18)
+            )
+        );
+
+        alert("Price Updated ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Price update failed");
+    }finally{
+        // 🔄 ENABLE BACK
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "SET";
+    }
 }
 
 
@@ -1309,25 +1365,60 @@ async function setBonuses() {
     const dirPct = document.getElementById('dirPct')?.value;  
     const restkPct = document.getElementById('restkPct')?.value;  
 
-    // 🔹 DIRECT %
-    if(dirPct){
-        if(dirPct < 0 || dirPct > 100){
-            alert("Direct % must be 0-100");
-            return;
-        }
-        await txWrap(contract.setDirectPercent(Number(dirPct)));
+    // 🔒 EMPTY CHECK
+    if(!dirPct && !restkPct){
+        alert("Enter at least one value");
+        return;
     }
 
-    // 🔹 RESTAKE %
-    if(restkPct){
-        if(restkPct < 0 || restkPct > 100){
-            alert("Restake % must be 0-100");
-            return;
-        }
-        await txWrap(contract.setRestakeBonus(Number(restkPct)));
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
     }
 
-    alert("Bonuses Updated ✅");
+    try{
+
+        // 🔥 disable button
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        // 🔹 DIRECT %
+        if(dirPct){
+            if(dirPct < 0 || dirPct > 100){
+                alert("Direct % must be 0-100");
+                return;
+            }
+
+            await txWrap(
+                contract.setDirectPercent(Number(dirPct))
+            );
+        }
+
+        // 🔹 RESTAKE %
+        if(restkPct){
+            if(restkPct < 0 || restkPct > 100){
+                alert("Restake % must be 0-100");
+                return;
+            }
+
+            await txWrap(
+                contract.setRestakeBonus(Number(restkPct))
+            );
+        }
+
+        alert("Bonuses Updated ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Update failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Set";
+    }
 }
   
 async function manualReward(){
@@ -1348,32 +1439,60 @@ async function manualReward(){
         return;
     }
 
+    // 🔒 LIMIT (safety)
+    if(Number(amt) > 100000){
+        alert("Amount too high");
+        return;
+    }
+
     // 📝 REASON CHECK
     if(!reason){
         alert("Enter reward reason");
         return;
     }
 
+    // ⚠️ CONFIRM
+    if(!confirm(`Send ${amt} DMX to ${addr.slice(0,6)}...?`)){
+        return;
+    }
+
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
     try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
 
         await txWrap(
             contract.manualReward(addr, Number(amt), reason)
         );
 
+        alert("Reward Sent ✅");
+
     }catch(e){
         console.error(e);
         alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Send Reward";
     }
 }
   
-// 🔹 LEVEL %
 async function setLevelPct(){
 
     const level = document.getElementById("lvlId").value;
     const bps = document.getElementById("lvlBps").value;
 
+    // 🔒 VALIDATION
     if(level < 1 || level > 25){
-        alert("Invalid Level");
+        alert("Invalid Level (1-25)");
         return;
     }
 
@@ -1382,33 +1501,118 @@ async function setLevelPct(){
         return;
     }
 
-    await txWrap(contract.setLevelPercent(Number(level), Number(bps)));
+    // 🔒 LIMIT (IMPORTANT)
+    if(bps > 3000){
+        alert("Too high (Max 30%)");
+        return;
+    }
 
-    alert("Level % Updated ✅");
+    // ⚠️ CONFIRM
+    if(!confirm(`Set Level ${level} to ${bps} BPS?`)){
+        return;
+    }
+
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        await txWrap(
+            contract.setLevelPercent(
+                Number(level),
+                Number(bps)
+            )
+        );
+
+        alert("Level % Updated ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Update failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Set %";
+    }
 }
 
 
-// 🔹 UNLOCK SYSTEM
 async function setLevelRule(){
 
     const mode = Number(document.getElementById("modeType").value);
     const level = Number(document.getElementById("levelInput").value);
     const value = Number(document.getElementById("valueInput").value);
 
+    // 🔒 MODE CHECK
+    if(mode !== 1 && mode !== 2){
+        alert("Invalid Mode");
+        return;
+    }
+
+    // 🔒 LEVEL CHECK
     if(level < 1 || level > 25){
         alert("Invalid Level (1-25)");
         return;
     }
 
-    await txWrap(contract.setUnlockMode(mode));
-
-    if(mode === 1){
-        await txWrap(contract.setLevelDirectRequired(level, value));
-    }else{
-        await txWrap(contract.setLevelUnlockVolume(level, value));
+    // 🔒 VALUE CHECK
+    if(!value || value <= 0){
+        alert("Enter valid value");
+        return;
     }
 
-    alert("Unlock Rule Applied ✅");
+    // ⚠️ CONFIRM
+    const msg = mode === 1
+    ? `Set Level ${level} Direct Count = ${value}?`
+    : `Set Level ${level} Volume = ${value}?`;
+
+    if(!confirm(msg)) return;
+
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        // 🔹 STEP 1: SET MODE
+        await txWrap(contract.setUnlockMode(mode));
+
+        // 🔹 STEP 2: APPLY RULE
+        if(mode === 1){
+            await txWrap(
+                contract.setLevelDirectRequired(level, value)
+            );
+        }else{
+            await txWrap(
+                contract.setLevelUnlockVolume(level, value)
+            );
+        }
+
+        alert("Unlock Rule Applied ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Update failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Apply";
+    }
 }
   
 async function giveRank(){
@@ -1429,21 +1633,55 @@ async function giveRank(){
         return;
     }
 
+    // 🔒 LIMIT (SAFETY)
+    if(Number(amt) > 1000000){
+        alert("Too large amount (Check again)");
+        return;
+    }
+
     // 🏆 RANK CHECK
     if(!rank){
         alert("Enter rank name");
         return;
     }
 
+    // ⚠️ CONFIRMATION
+    const confirmMsg = `
+Send Rank Reward?
+
+Address: ${addr}
+Amount: ${amt} DMX
+Rank: ${rank}
+    `;
+
+    if(!confirm(confirmMsg)) return;
+
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
     try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
 
         await txWrap(
             contract.giveRankReward(addr, Number(amt), rank)
         );
 
+        alert("Rank Reward Sent ✅");
+
     }catch(e){
         console.error(e);
         alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Give Rank";
     }
 }
           
@@ -1461,10 +1699,23 @@ let lastClaimData = [];
 async function fetchSafe(url, fallbackFn) {
     try {
         const res = await fetch(url);
+
         if (!res.ok) throw new Error("Server error");
+
         return await res.json();
+
     } catch (e) {
+
         console.warn("Server failed → fallback");
+
+        // 🔥 optional alert (only once)
+        const status = document.getElementById("adminStatus");
+        if(status && !status.innerHTML.includes("SERVER OFFLINE")){
+            status.innerHTML += 
+            " <span class='text-yellow-400'>[SERVER OFFLINE]</span>";
+        }
+
+        // 🔁 fallback
         return fallbackFn ? await fallbackFn() : [];
     }
 }
@@ -1621,6 +1872,12 @@ document.getElementById("claimBox").innerHTML = html;
 // ==============================
 function downloadMembers(data){
 
+// 🔒 EMPTY CHECK
+if(!data || data.length === 0){
+    alert("No data to download");
+    return;
+}
+
 let csv = "Address,Name,Phone,Email,Amount,Date,Time\n";
 
 data.forEach(m=>{
@@ -1635,7 +1892,7 @@ a.href = url;
 a.download = "members.csv";
 a.click();
 }
-
+    
 // ==============================
 // 🎛️ DOWNLOAD TOGGLE
 // ==============================
@@ -1731,7 +1988,7 @@ ${claimHTML}
 console.warn("Search:", e.message);
 
 document.getElementById("userResult").innerHTML =
-"⚠️ Waiting for server...";
+"⚠️ Server offline or user not found";
 
 }
 
@@ -1880,8 +2137,12 @@ statusEl.innerHTML = statusEl.innerHTML.replace(/\[LOW DMX LIQUIDITY\]/g, "");
 
 // add only once if needed
 if(dmxValue < 10000){
-    statusEl.innerHTML += 
-    " <span class='text-red-500'>[LOW DMX LIQUIDITY]</span>";
+
+    if(!statusEl.innerHTML.includes("LOW DMX")){
+        statusEl.innerHTML += 
+        " <span class='text-red-500'>[LOW DMX LIQUIDITY]</span>";
+    }
+
 }
 
 }catch(e){  
@@ -1891,6 +2152,7 @@ console.error("Liquidity load error",e);
 }  
 
 }
+
   
 async function checkSwapStatus(){
 
@@ -1985,15 +2247,58 @@ document.getElementById(id).innerHTML = html || "No data";
   
           
         // ---------- CHANGE TREASURY ----------  
-async function changeTreasury(){  
-  
-txWrap(contract.changeTreasury(  
-  
-document.getElementById("treasuryAddr").value  
-  
-));  
-  
-}  
+async function changeTreasury(){
+
+    const addr = document.getElementById("treasuryAddr").value.trim();
+
+    // 🔐 ADDRESS CHECK
+    if(!ethers.utils.isAddress(addr)){
+        alert("Invalid wallet address");
+        return;
+    }
+
+    // ⚠️ CONFIRM (VERY IMPORTANT)
+    const confirmMsg = `
+⚠️ CHANGE TREASURY WALLET
+
+New Address:
+${addr}
+
+This will redirect ALL future funds.
+
+Are you sure?
+    `;
+
+    if(!confirm(confirmMsg)) return;
+
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Updating...";
+
+        await txWrap(
+            contract.changeTreasury(addr)
+        );
+
+        alert("Treasury Updated ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Update Treasury Wallet";
+    }
+}
   
   
 async function postAnn() {   
@@ -2001,6 +2306,7 @@ async function postAnn() {
     const msg = document.getElementById('annMsg')?.value.trim();  
     const img = document.getElementById('annImg')?.value.trim();  
 
+    // 🔒 MESSAGE CHECK
     if(!msg){
         alert("Enter announcement message");
         return;
@@ -2011,54 +2317,105 @@ async function postAnn() {
         return;
     }
 
-    // optional image validation
-    if(img && !img.startsWith("http")){
-        alert("Invalid Image URL");
+    // 🔒 IMAGE URL CHECK
+    if(img){
+        try{
+            new URL(img); // strict validation
+        }catch{
+            alert("Invalid Image URL");
+            return;
+        }
+    }
+
+    // ⚠️ CONFIRM
+    if(!confirm("Post this announcement to all users?")) return;
+
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
         return;
     }
 
-    await txWrap(
-        contract.postAnnouncement(msg, img || "")
-    );
+    try{
 
-    alert("Announcement Posted ✅");
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Posting...";
+
+        await txWrap(
+            contract.postAnnouncement(msg, img || "")
+        );
+
+        alert("Announcement Posted ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "POST ANNOUNCEMENT";
+    }
 }
   
 // 🔹 MANUAL UNLOCK
-async function unlLevel() {   
+async function unlLevel(){   
 
-    const addr = document.getElementById('uAddr')?.value;
+    const addr = document.getElementById('uAddr')?.value.trim();
     const days = document.getElementById('unlDays')?.value || 30;
 
-    if(!addr || !addr.startsWith("0x") || addr.length !== 42){
-        alert("Invalid Address");
+    // 🔐 ADDRESS CHECK
+    if(!ethers.utils.isAddress(addr)){
+        alert("Invalid wallet address");
         return;
     }
 
+    // 📅 DAYS CHECK
     if(days <= 0){
         alert("Invalid Days");
         return;
     }
 
-    await txWrap(
-        contract.unlockLevelManually(
-            addr,
-            Number(days)
-        )
-    );
+    // ⚠️ CONFIRM
+    if(!confirm(`Unlock levels for ${days} days?`)) return;
 
-    alert("Level Unlocked ✅");
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        await txWrap(
+            contract.unlockLevelManually(addr, Number(days))
+        );
+
+        alert("Level Unlocked ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Unlock";
+    }
 }
 
+async function setCustCap(){   
 
-// 🔹 CUSTOM CAP
-async function setCustCap() {   
-
-    const addr = document.getElementById('uAddr')?.value;
+    const addr = document.getElementById('uAddr')?.value.trim();
     const cap = document.getElementById('custCap')?.value;
 
-    if(!addr || !addr.startsWith("0x") || addr.length !== 42){
-        alert("Invalid Address");
+    if(!ethers.utils.isAddress(addr)){
+        alert("Invalid wallet address");
         return;
     }
 
@@ -2067,77 +2424,393 @@ async function setCustCap() {
         return;
     }
 
-    await txWrap(
-        contract.setCustomCap(
-            addr,
-            Number(cap)
-        )
-    );
-
-    alert("Custom Cap Set ✅");
-}
-
-
-// 🔹 RESET CAP
-async function resCap() {   
-
-    const addr = document.getElementById('uAddr')?.value;
-
-    if(!addr || !addr.startsWith("0x") || addr.length !== 42){
-        alert("Invalid Address");
+    // 🔒 LIMIT (SAFETY)
+    if(cap > 10){
+        alert("Too high (Max 10 recommended)");
         return;
     }
 
-    await txWrap(
-        contract.resetCap(addr)
-    );
+    if(!confirm(`Set custom cap = ${cap}x ?`)) return;
 
-    alert("Cap Reset Done ✅");
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Setting...";
+
+        await txWrap(
+            contract.setCustomCap(addr, Number(cap))
+        );
+
+        alert("Custom Cap Set ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Set Cap";
+    }
 }
-        async function setPause(s) { txWrap(s ? contract.pause() : contract.unpause()); }  
-  
-        async function transferOwn() {  
-            const addr = document.getElementById('newOwner').value;  
-            if (confirm(`Transfer ownership to ${addr}?`)) txWrap(contract.transferOwnership(addr));  
-        }  
-  
-        async function renounceOwn() {  
-            if (confirm("DANGER: This will delete admin access forever! Confirm?")) txWrap(contract.renounceOwnership());  
-        }  
-  
-        async function togglePrice(){  
-  
-const mode = await contract.isManualPrice();  
-  
-await txWrap(contract.toggleManualPrice(!mode));  
-  
-        }  
-  
-        async function emgWithdraw() {   
-            txWrap(contract.emergencyWithdrawToken(  
-                document.getElementById('ewTok').value,   
-                document.getElementById('ewRec').value,   
-                ethers.utils.parseUnits(document.getElementById('ewAmt').value, 18)  
-            ));   
-        }  
+
+async function resCap(){   
+
+    const addr = document.getElementById('uAddr')?.value.trim();
+
+    if(!ethers.utils.isAddress(addr)){
+        alert("Invalid wallet address");
+        return;
+    }
+
+    // ⚠️ HIGH RISK CONFIRM
+    if(!confirm("Reset user income cap? This cannot be undone.")) return;
+
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Resetting...";
+
+        await txWrap(
+            contract.resetCap(addr)
+        );
+
+        alert("Cap Reset Done ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Reset 4X";
+    }
+        }
+
+    
+    async function setPause(state){
+
+    if(!contract) return;
+
+    const action = state ? "PAUSE CONTRACT" : "UNPAUSE CONTRACT";
+
+    if(!confirm(`${action}?`)) return;
+
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        await txWrap(
+            state ? contract.pause() : contract.unpause()
+        );
+
+        alert(`Contract ${state ? "Paused" : "Unpaused"} ✅`);
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = state ? "Pause Contract" : "Unpause Contract";
+    }
+}
+
+ async function transferOwn(){
+
+    const addr = document.getElementById('newOwner').value.trim();
+
+    if(!ethers.utils.isAddress(addr)){
+        alert("Invalid wallet address");
+        return;
+    }
+
+    const confirmMsg = `
+⚠️ TRANSFER OWNERSHIP
+
+New Owner:
+${addr}
+
+You will LOSE admin control.
+    `;
+
+    if(!confirm(confirmMsg)) return;
+
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Transferring...";
+
+        await txWrap(
+            contract.transferOwnership(addr)
+        );
+
+        alert("Ownership Transferred ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Transfer Ownership";
+    }
+     }
+
+ async function renounceOwn(){
+
+    const confirmMsg = `
+🚨 PERMANENT ACTION
+
+You will REMOVE OWNER forever.
+No admin control after this.
+
+Type YES to continue.
+    `;
+
+    const input = prompt(confirmMsg);
+
+    if(input !== "YES"){
+        alert("Cancelled");
+        return;
+    }
+
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        await txWrap(
+            contract.renounceOwnership()
+        );
+
+        alert("Ownership Renounced ⚠️");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Renounce Ownership";
+    }
+    }
+
+ async function togglePrice(){
+
+    if(!contract) return;
+
+    try{
+
+        const current = await contract.isManualPrice();
+
+        const next = !current;
+
+        const msg = next 
+        ? "Switch to MANUAL price?"
+        : "Switch to LIVE price?";
+
+        if(!confirm(msg)) return;
+
+        const bal = await provider.getBalance(userAddress);
+        if(bal.lt(ethers.utils.parseEther("0.003"))){
+            alert("Low BNB for gas");
+            return;
+        }
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Updating...";
+
+        await txWrap(
+            contract.toggleManualPrice(next)
+        );
+
+        alert("Price Mode Updated ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "LIVE";
+    }
+ }   
+
+async function emgWithdraw(){
+
+    const token = document.getElementById('ewTok').value.trim();
+    const to = document.getElementById('ewRec').value.trim();
+    const amt = document.getElementById('ewAmt').value;
+
+    // 🔐 VALIDATION
+    if(!ethers.utils.isAddress(token) || !ethers.utils.isAddress(to)){
+        alert("Invalid address");
+        return;
+    }
+
+    if(!amt || Number(amt) <= 0){
+        alert("Invalid amount");
+        return;
+    }
+
+    // ⚠️ CONFIRM
+    if(!confirm(`Withdraw ${amt} tokens to ${to}?`)) return;
+
+    // 🔹 GAS CHECK
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        await txWrap(
+            contract.emergencyWithdrawToken(
+                token,
+                to,
+                ethers.utils.parseUnits(amt, 18)
+            )
+        );
+
+        alert("Tokens Recovered ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Recover Tokens";
+    }
+}
 
   async function rescueETH(){
+
     const amt = document.getElementById("ethAmt").value;
 
-    await txWrap(
-        contract.rescueETH(
-            ethers.utils.parseEther(amt)
-        )
-    );
-   }
+    if(!amt || Number(amt) <= 0){
+        alert("Enter valid amount");
+        return;
+    }
+
+    if(!confirm(`Rescue ${amt} BNB?`)) return;
+
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        await txWrap(
+            contract.rescueETH(
+                ethers.utils.parseEther(amt)
+            )
+        );
+
+        alert("BNB Recovered ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "Rescue BNB";
+    }
+}
 
   async function setMaintenanceUnit(){
+
     const val = document.getElementById("maintUnit").value;
 
-    await txWrap(
-        contract.setMaintenanceUnit(val)
-    );
-  }
+    if(!val || Number(val) <= 0){
+        alert("Invalid value");
+        return;
+    }
+
+    // 🔒 LIMIT (IMPORTANT)
+    if(val < 1000){
+        alert("Too low (recommended 10000)");
+        return;
+    }
+
+    if(!confirm(`Set Maintenance Unit = ${val} DMX ?`)) return;
+
+    const bal = await provider.getBalance(userAddress);
+    if(bal.lt(ethers.utils.parseEther("0.003"))){
+        alert("Low BNB for gas");
+        return;
+    }
+
+    try{
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "Updating...";
+
+        await txWrap(
+            contract.setMaintenanceUnit(val)
+        );
+
+        alert("Maintenance Updated ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Transaction failed");
+    }finally{
+        const btn = event.target;
+        btn.disabled = false;
+        btn.innerText = "SET";
+    }
+}
 
 async function toggleAutoSwap(state){
 
