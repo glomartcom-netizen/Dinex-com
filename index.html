@@ -1613,36 +1613,37 @@ async function setLevelRule(){
         return;
     }
 
-    try{
+try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "Processing...";
 
-        // 🔹 STEP 1: SET MODE
-        await txWrap(contract.setUnlockMode(mode));
+    // 🔹 STEP 1
+    const tx1 = await contract.setUnlockMode(mode);
+    await tx1.wait();
 
-        // 🔹 STEP 2: APPLY RULE
-        if(mode === 1){
-            await txWrap(
-                contract.setLevelDirectRequired(level, value)
-            );
-        }else{
-            await txWrap(
-                contract.setLevelUnlockVolume(level, value)
-            );
-        }
+    // 🔹 STEP 2
+    let tx2;
 
-        alert("Unlock Rule Applied ✅");
-
-    }catch(e){
-        console.error(e);
-        alert("Update failed");
-    }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Apply";
+    if(mode === 1){
+        tx2 = await contract.setLevelDirectRequired(level, value);
+    }else{
+        tx2 = await contract.setLevelUnlockVolume(level, value);
     }
+
+    await tx2.wait();
+
+    alert("Unlock Rule Applied ✅");
+
+}catch(e){
+    console.error(e);
+    alert("Update failed");
+}finally{
+    const btn = event.target;
+    btn.disabled = false;
+    btn.innerText = "Apply";
+}
 }
   
 async function giveRank(){
