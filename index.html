@@ -305,6 +305,66 @@ Load Leaderboards
 </div>  
   
 </section>  
+
+<!-- ========================= -->
+<!-- 📦 DATA (SERVER READY) -->
+<!-- ========================= -->
+
+<section class="admin-card p-8 mt-10">
+
+<h2 class="text-xl font-black text-cyan-400 mb-6">
+📦 Data Explorer
+</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+<!-- MEMBERS -->
+<div>
+<h3 class="text-purple-400 font-bold mb-2">Members</h3>
+
+<button onclick="loadAllMembers()"
+class="bg-purple-600 px-4 py-2 rounded-lg text-white font-bold mb-2">
+Load Members
+</button>
+
+<div id="allMembersBox"
+class="bg-black/40 p-3 rounded-lg text-xs max-h-60 overflow-y-auto">
+Waiting...
+</div>
+</div>
+
+<!-- TRANSACTIONS -->
+<div>
+<h3 class="text-yellow-400 font-bold mb-2">Transactions</h3>
+
+<button onclick="loadTransactions()"
+class="bg-yellow-600 px-4 py-2 rounded-lg text-white font-bold mb-2">
+Load Transactions
+</button>
+
+<div id="txBox"
+class="bg-black/40 p-3 rounded-lg text-xs max-h-60 overflow-y-auto">
+Waiting...
+</div>
+</div>
+
+<!-- CLAIMS -->
+<div>
+<h3 class="text-green-400 font-bold mb-2">Claims</h3>
+
+<button onclick="loadClaims()"
+class="bg-green-600 px-4 py-2 rounded-lg text-white font-bold mb-2">
+Load Claims
+</button>
+
+<div id="claimBox"
+class="bg-black/40 p-3 rounded-lg text-xs max-h-60 overflow-y-auto">
+Waiting...
+</div>
+</div>
+
+</div>
+</section>        
   
 <!-- MATRIX -->  
 <section class="admin-card p-8">  
@@ -1771,6 +1831,123 @@ async function checkAutoSwapStatus(){
         console.warn("AutoSwap status error");
     }
 }
+
+// ==============================
+// 📦 MEMBERS (FULL LIST)
+// ==============================
+async function loadAllMembers(){
+
+try{
+const res = await fetch("/api/members");
+const data = await res.json();
+
+if(!data.length){
+document.getElementById("allMembersBox").innerHTML = "No Data";
+return;
+}
+
+let html = "";
+
+data.forEach((m,i)=>{
+
+const shortAddr = m.addr.slice(0,6) + "..." + m.addr.slice(-4);
+
+html += `
+<div class="border-b border-white/10 py-2">
+#${i+1}<br>
+📅 ${m.date} ⏰ ${m.time}<br>
+👛 ${shortAddr}<br>
+💰 ${m.amount}
+</div>
+`;
+
+});
+
+document.getElementById("allMembersBox").innerHTML = html;
+
+}catch(e){
+document.getElementById("allMembersBox").innerHTML = "Server Not Connected";
+}
+
+}
+
+
+// ==============================
+// 💰 TRANSACTIONS
+// ==============================
+async function loadTransactions(){
+
+try{
+const res = await fetch("/api/transactions");
+const data = await res.json();
+
+if(!data.length){
+document.getElementById("txBox").innerHTML = "No Data";
+return;
+}
+
+let html = "";
+
+data.forEach(t=>{
+
+const shortAddr = t.addr.slice(0,6) + "..." + t.addr.slice(-4);
+
+html += `
+<div class="border-b border-white/10 py-2">
+📅 ${t.date} ⏰ ${t.time}<br>
+👛 ${shortAddr}<br>
+💰 ${t.amount}
+</div>
+`;
+
+});
+
+document.getElementById("txBox").innerHTML = html;
+
+}catch(e){
+document.getElementById("txBox").innerHTML = "Server Not Connected";
+}
+
+}
+
+
+// ==============================
+// 🪙 CLAIM HISTORY
+// ==============================
+async function loadClaims(){
+
+try{
+const res = await fetch("/api/claims");
+const data = await res.json();
+
+if(!data.length){
+document.getElementById("claimBox").innerHTML = "No Data";
+return;
+}
+
+let html = "";
+
+data.forEach(c=>{
+
+const shortAddr = c.addr.slice(0,6) + "..." + c.addr.slice(-4);
+
+html += `
+<div class="border-b border-white/10 py-2">
+📅 ${c.date} ⏰ ${c.time}<br>
+👛 ${shortAddr}<br>
+💰 ${c.amount}
+</div>
+`;
+
+});
+
+document.getElementById("claimBox").innerHTML = html;
+
+}catch(e){
+document.getElementById("claimBox").innerHTML = "Server Not Connected";
+}
+
+    }    
    
           
 </script>  
