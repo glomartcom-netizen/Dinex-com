@@ -1022,121 +1022,85 @@ setInterval(async () => {
     }
 }, 5000);
 
-  
-        async function loadStats() {  
-  
-    if(!contract) return;  
-  
-    try {  
-  
-        const s = await Promise.all([  
-            contract.totalUSDTStaked(),  
-            contract.totalStakedAllUsers(),  
-            contract.totalClaimedDMX(),  
-            contract.totalDirectPaid(),  
-            contract.totalLevelPaid(),  
-            contract.totalRestakeDMX(),  
-            contract.getMembersCount(),  
-            contract.isManualPrice(),
-            contract.totalClaimedUSDT()
-        ]);  
-  
-        const f = ethers.utils.formatEther;  
-
-document.getElementById('statUSDT').innerText = Number(f(s[0])).toLocaleString();  
-document.getElementById('statDMX').innerText = Number(f(s[1])).toLocaleString();  
-document.getElementById('statRestake').innerText = Number(f(s[5])).toLocaleString();  
-document.getElementById('statClaimed').innerText = Number(f(s[2])).toLocaleString();  
-document.getElementById('statDirectPaid').innerText = Number(f(s[3])).toLocaleString();  
-document.getElementById('statLevelPaid').innerText = Number(f(s[4])).toLocaleString();  
-
-document.getElementById('statMembersCount').innerText = s[6].toString();
-
-// 🔥 USDT CLAIM (OPTIMIZED)
-document.getElementById('statClaimedUSDT').innerText = Number(f(s[8])).toLocaleString();
-        
-        // CONTRACT DMX BALANCE  
-try {  
-  
-const dmxAddr = await contract.dmx();  
-  
-const token = new ethers.Contract(  
-dmxAddr,  
-["function balanceOf(address) view returns(uint256)"],  
-provider  
-);  
-  
-const bal = await token.balanceOf(contractAddress);  
-  
-document.getElementById("statContractDMX").innerText =  
-Number(ethers.utils.formatEther(bal)).toLocaleString();  
-  
-}catch(e){  
-  
-console.warn("DMX balance load error");  
-  
-        }  
-  
-        const statusEl = document.getElementById('priceStatus');  
-  
-        if (s[7]) {  
-            statusEl.innerText = "MANUAL";  
-            statusEl.className = "text-red-500 font-black ml-2 tracking-widest";  
-        } else {  
-            statusEl.innerText = "LIVE";  
-            statusEl.className = "text-emerald-500 font-black ml-2 tracking-widest";  
-        }  
-  
-        // SAFE PENDING LOAD  
-        let pending = 0;  
-  
-        try {
-    pending = await contract.getTotalPendingClaims();
-} catch(e) {
-    pending = 0;
-    console.warn("Pending too large - skipped");
-}
-  
-        document.getElementById('statPending').innerText =  
-        Number(ethers.utils.formatEther(pending)).toLocaleString();  
-  
-    }  
-  
-    catch(e) {  
-  
-        console.error("Stats Fail", e);  
-  
-    }  
-  
-}  
-  
-        const txWrap = async (fn) => {   
-            try {   
-                const tx = await fn;   
-                alert("Transaction Sent! Waiting...");  
-                await tx.wait();   
-                alert("Blockchain Success!");   
-                loadStats();   
-            } catch(e) {   
-                alert(e.reason || e.message || "Transaction Failed");   
-                console.error(e);   
-            }   
-        };  
-
-  // ==============================
-// SERVER SAFE FETCH (FALLBACK)
+         
 // ==============================
-async function fetchSafe(url, fallbackFn) {
-    try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Server error");
-        return await res.json();
-    } catch (e) {
-        console.warn("Server failed → fallback");
-        return await fallbackFn();
-    }
+// 📊 STATS (SERVER ONLY)
+// ==============================
+async function loadStats() {  
+
+try {  
+
+const res = await fetch("/api/stats");
+
+if(!res.ok){
+    throw new Error("Server not ready");
 }
-  
+
+const s = await res.json();
+
+// UI UPDATE
+document.getElementById('statUSDT').innerText = (s.totalUSDT || 0).toLocaleString();  
+document.getElementById('statDMX').innerText = (s.totalStaked || 0).toLocaleString();  
+document.getElementById('statRestake').innerText = (s.totalRestake || 0).toLocaleString();  
+document.getElementById('statClaimed').innerText = (s.totalClaimedDMX || 0).toLocaleString();  
+document.getElementById('statDirectPaid').innerText = (s.totalDirect || 0).toLocaleString();  
+document.getElementById('statLevelPaid').innerText = (s.totalLevel || 0).toLocaleString();  
+document.getElementById('statMembersCount').innerText = (s.members || 0).toString();  
+document.getElementById('statClaimedUSDT').innerText = (s.totalClaimedUSDT || 0).toLocaleString();  
+document.getElementById("statContractDMX").innerText = (s.contractDMX || 0).toLocaleString();
+
+// PRICE MODE
+const statusEl = document.getElementById('priceStatus');  
+
+if (s.manualPrice) {  
+    statusEl.innerText = "MANUAL";  
+    statusEl.className = "text-red-500 font-black ml-2 tracking-widest";  
+} else {  
+    statusEl.innerText = "LIVE";  
+    statusEl.className = "text-emerald-500 font-black ml-2 tracking-widest";  
+}  
+
+// PENDING
+document.getElementById('statPending').innerText = (s.pending || 0).toLocaleString();  
+
+} catch(e) {  
+
+console.warn("Stats:", e.message);
+
+// SAFE UI
+document.getElementById('statUSDT').innerText = "...";  
+document.getElementById('statDMX').innerText = "...";  
+document.getElementById('statRestake').innerText = "...";  
+document.getElementById('statClaimed').innerText = "...";  
+document.getElementById('statDirectPaid').innerText = "...";  
+document.getElementById('statLevelPaid').innerText = "...";  
+document.getElementById('statMembersCount').innerText = "...";  
+document.getElementById('statClaimedUSDT').innerText = "...";  
+document.getElementById('statContractDMX').innerText = "...";  
+document.getElementById('statPending').innerText = "...";  
+
+}  
+
+}
+
+
+// ==============================
+// 🔥 TX HANDLER (KEEP THIS)
+// ==============================
+const txWrap = async (fn) => {   
+    try {   
+        const tx = await fn;   
+        alert("Transaction Sent! Waiting...");  
+        await tx.wait();   
+        alert("Blockchain Success!");   
+        loadStats();   
+    } catch(e) {   
+        alert(e.reason || e.message || "Transaction Failed");   
+        console.error(e);   
+    }   
+};
+    
+
         // --- functions ---  
         async function setRates() {   
 
@@ -1857,10 +1821,15 @@ async function loadTransactions(){
 
 try{
 const res = await fetch("/api/transactions");
+
+if(!res.ok){
+    throw new Error();
+}
+
 const data = await res.json();
 
 if(!data.length){
-document.getElementById("membersBox").innerHTML = "No Transactions";
+document.getElementById("txBox").innerHTML = "No Transactions";
 return;
 }
 
@@ -1869,17 +1838,17 @@ let html = "";
 data.forEach(t=>{
 html += `
 <div class="border-b border-white/10 py-2">
-📅 ${t.date} ⏰ ${t.time}<br>
-👛 ${t.addr.slice(0,6)}...${t.addr.slice(-4)}<br>
-💰 ${t.amount}
+📅 ${t.date || "-"} ⏰ ${t.time || "-"}<br>
+👛 ${t.addr?.slice(0,6)}...${t.addr?.slice(-4)}<br>
+💰 ${t.amount || "-"}
 </div>
 `;
 });
 
-document.getElementById("membersBox").innerHTML = html;
+document.getElementById("txBox").innerHTML = html;
 
 }catch(e){
-document.getElementById("membersBox").innerHTML = "Server Not Connected";
+document.getElementById("txBox").innerHTML = "⚠️ Waiting for server...";
 }
 
 }
@@ -1892,10 +1861,15 @@ async function loadClaims(){
 
 try{
 const res = await fetch("/api/claims");
+
+if(!res.ok){
+    throw new Error();
+}
+
 const data = await res.json();
 
 if(!data.length){
-document.getElementById("membersBox").innerHTML = "No Claims";
+document.getElementById("claimBox").innerHTML = "No Claims";
 return;
 }
 
@@ -1904,17 +1878,17 @@ let html = "";
 data.forEach(c=>{
 html += `
 <div class="border-b border-white/10 py-2">
-📅 ${c.date} ⏰ ${c.time}<br>
-👛 ${c.addr.slice(0,6)}...${c.addr.slice(-4)}<br>
-💰 ${c.amount}
+📅 ${c.date || "-"} ⏰ ${c.time || "-"}<br>
+👛 ${c.addr?.slice(0,6)}...${c.addr?.slice(-4)}<br>
+💰 ${c.amount || "-"}
 </div>
 `;
 });
 
-document.getElementById("membersBox").innerHTML = html;
+document.getElementById("claimBox").innerHTML = html;
 
 }catch(e){
-document.getElementById("membersBox").innerHTML = "Server Not Connected";
+document.getElementById("claimBox").innerHTML = "⚠️ Waiting for server...";
 }
 
 }
