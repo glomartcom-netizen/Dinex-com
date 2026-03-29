@@ -242,19 +242,25 @@ Total Members: <span id="memberCount" class="text-white font-bold">0</span>
 <!-- BUTTONS -->
 <div class="flex flex-wrap gap-3 mb-4">
 
-<button onclick="loadMembers()"
+<button onclick="loadMembers(); showDownload('members')" id="btnMembers"
 class="bg-purple-600 px-4 py-2 rounded-xl text-white font-bold">
 Members
 </button>
 
-<button onclick="loadTransactions()"
+<button onclick="loadTransactions(); showDownload('tx')" id="btnTx"
 class="bg-yellow-600 px-4 py-2 rounded-xl text-white font-bold">
 Transactions
 </button>
 
-<button onclick="loadClaims()"
+<button onclick="loadClaims(); showDownload('claims')" id="btnClaims"
 class="bg-green-600 px-4 py-2 rounded-xl text-white font-bold">
 Claims
+</button>
+
+<!-- 🔥 ADD THIS BUTTON -->
+<button onclick="openFullView(lastMembersData)"
+class="bg-indigo-600 px-4 py-2 rounded-xl text-white font-bold">
+Full View
 </button>
 
 </div>
@@ -264,6 +270,13 @@ Claims
 class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto">
 No Data
 </div>
+
+<!-- DOWNLOAD -->
+<button id="downloadBtn"
+onclick="downloadMembers(lastMembersData)"
+class="bg-green-600 px-4 py-2 rounded mt-3 hidden">
+Download CSV
+</button>
 
 <!-- SEARCH -->
 <div class="mt-6 space-y-3">
@@ -283,6 +296,26 @@ class="text-sm text-gray-300"></div>
 </div>
 
 </section>
+
+ <!-- 🔥 FULL VIEW POPUP -->
+<div id="popup" class="fixed inset-0 bg-black/80 backdrop-blur hidden z-50 flex items-center justify-center">
+
+<div class="bg-[#111827] p-6 rounded-2xl w-[90%] max-w-2xl max-h-[80vh] overflow-y-auto">
+
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-lg font-bold text-white">Full Data View</h2>
+
+<button onclick="closePopup()" 
+class="bg-red-600 px-3 py-1 rounded text-white font-bold">
+Close
+</button>
+</div>
+
+<div id="popupContent" class="text-sm font-mono"></div>
+
+</div>
+
+</div>       
   
   
 <!-- TOP LEADERS -->  
@@ -303,26 +336,46 @@ Load Leaderboards
 <div>  
 <h3 class="text-cyan-400 font-bold mb-2">Top Stakers</h3>  
 <div id="topStakers" class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto"></div>  
+
+<button onclick="openFullView(topStakersData)"  
+class="mt-2 bg-indigo-600 px-4 py-2 rounded text-white text-sm">
+Full View
+</button>
 </div>  
   
 <div>  
 <h3 class="text-green-400 font-bold mb-2">Top Team Builders</h3>  
 <div id="topTeam" class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto"></div>  
+
+<button onclick="openFullView(topTeamData)"  
+class="mt-2 bg-indigo-600 px-4 py-2 rounded text-white text-sm">
+Full View
+</button>
 </div>  
   
 <div>  
 <h3 class="text-orange-400 font-bold mb-2">Top Direct Sponsors</h3>  
 <div id="topDirect" class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto"></div>  
+
+<button onclick="openFullView(topDirectData)"  
+class="mt-2 bg-indigo-600 px-4 py-2 rounded text-white text-sm">
+Full View
+</button>
 </div>  
   
 <div>  
 <h3 class="text-purple-400 font-bold mb-2">Top Earners</h3>  
 <div id="topEarners" class="bg-black/40 p-4 rounded-xl text-sm font-mono max-h-80 overflow-y-auto"></div>  
+
+<button onclick="openFullView(topEarnersData)"  
+class="mt-2 bg-indigo-600 px-4 py-2 rounded text-white text-sm">
+Full View
+</button>
 </div>  
   
 </div>  
   
-</section>  
+</section>
 
 <!-- MATRIX -->  
 <section class="admin-card p-8">  
@@ -914,6 +967,11 @@ clearInterval(reconnect);
 ];  
   
 let provider, signer, contract, userAddress;
+
+let topStakersData = [];
+let topTeamData = [];
+let topDirectData = [];
+let topEarnersData = [];
     
 // 1. Function to Update UI specifically
 async function handleUIUpdate(isConnected) {
@@ -1272,80 +1330,210 @@ async function giveRank() {
 }  
           
 // ==============================
-// 👥 MEMBERS (SERVER ONLY)
+// 🔐 GLOBAL STATE
 // ==============================
-async function loadMembers(){  
+let memberLimit = 20;
+let lastMembersData = [];
+let lastTxData = [];
+let lastClaimData = [];
 
-try{
-
-const res = await fetch("/api/members");
-
-if(!res.ok){
-    throw new Error("Server not ready");
+// ==============================
+// 🧠 SAFE FETCH (SERVER + FALLBACK)
+// ==============================
+async function fetchSafe(url, fallbackFn) {
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Server error");
+        return await res.json();
+    } catch (e) {
+        console.warn("Server failed → fallback");
+        return fallbackFn ? await fallbackFn() : [];
+    }
 }
 
-const members = await res.json();
+// ==============================
+// 👥 MEMBERS
+// ==============================
+async function loadMembers(){
+
+const members = await fetchSafe(
+    "/api/members",
+    () => contract.getMembersList()
+);
+
+lastMembersData = members;
+renderMembers();
+
+}
+
+function renderMembers(){
 
 let html = "";
 
-for(let i=0; i<members.length; i++){
+for(let i=0; i<Math.min(memberLimit, lastMembersData.length); i++){
 
-    const m = members[i];
+    const m = lastMembersData[i];
 
+    if(typeof m === "object"){
+        html += `
+        <div class="border-b border-white/10 py-3 space-y-1">
+
+        👛 ${m.addr?.slice(0,6)}...${m.addr?.slice(-4)}
+
+        <div class="text-xs text-gray-400">
+        👤 ${m.name || "N/A"}
+        </div>
+
+        <div class="text-xs text-gray-400">
+        📞 ${m.phone || "N/A"}
+        </div>
+
+        <div class="text-xs text-gray-400">
+        📧 ${m.email || "N/A"}
+        </div>
+
+        <div class="text-xs text-gray-500">
+        📅 ${m.date || "-"} ⏰ ${m.time || "-"}
+        </div>
+
+        <div class="text-xs text-yellow-400">
+        💰 ${m.amount || "-"}
+        </div>
+
+        </div>
+        `;
+    } else {
+        html += `
+        <div class="border-b border-white/10 py-2">
+        👛 ${m}
+        </div>`;
+    }
+
+}
+
+if(lastMembersData.length > memberLimit){
     html += `
-    <div class="border-b border-white/10 py-2">
-    #${i+1}<br>
-    📅 ${m.date || "-"} ⏰ ${m.time || "-"}<br>
-    👛 ${m.addr?.slice(0,6)}...${m.addr?.slice(-4)}<br>
-    💰 ${m.amount || "-"}
-    </div>
-    `;
+    <button onclick="loadMoreMembers()" 
+    class="mt-3 bg-blue-600 px-4 py-2 rounded w-full">
+    View More
+    </button>`;
 }
 
 document.getElementById("membersBox").innerHTML = html;
 
-}catch(e){
-
-console.warn("Members:", e.message);
-
-document.getElementById("membersBox").innerHTML =
-"⚠️ Waiting for server...";
-
 }
 
-loadMembersCount();  
-
+function loadMoreMembers(){
+    memberLimit += 30;
+    renderMembers();
 }
-
 
 // ==============================
-// 👥 MEMBER COUNT (SERVER ONLY)
+// 👤 COUNT
 // ==============================
-async function loadMembersCount(){  
+async function loadMembersCount(){
 
-try{
-
-const res = await fetch("/api/memberCount");
-
-if(!res.ok){
-    throw new Error("Server not ready");
-}
-
-const count = await res.json();
+const count = await fetchSafe(
+    "/api/memberCount",
+    () => contract.getMembersCount()
+);
 
 document.getElementById("memberCount").innerText = count;
 
-}catch(e){
+}    
 
-console.warn("MemberCount:", e.message);
+// ==============================
+// 💰 TRANSACTIONS
+// ==============================
+async function loadTransactions(){
 
-document.getElementById("memberCount").innerText = "...";
+const data = await fetchSafe("/api/transactions");
+
+if(!data.length){
+document.getElementById("txBox").innerHTML = "No Transactions";
+return;
+}
+
+let html = "";
+
+data.forEach(t=>{
+html += `
+<div class="border-b border-white/10 py-2">
+📅 ${t.date || "-"} ⏰ ${t.time || "-"}<br>
+👛 ${t.addr?.slice(0,6)}...${t.addr?.slice(-4)}<br>
+💰 ${t.amount || "-"}
+</div>
+`;
+});
+
+document.getElementById("txBox").innerHTML = html;
 
 }
 
+// ==============================
+// 🪙 CLAIM HISTORY
+// ==============================
+async function loadClaims(){
+
+const data = await fetchSafe("/api/claims");
+
+if(!data.length){
+document.getElementById("claimBox").innerHTML = "No Claims";
+return;
 }
-  
-    
+
+let html = "";
+
+data.forEach(c=>{
+html += `
+<div class="border-b border-white/10 py-2">
+📅 ${c.date || "-"} ⏰ ${c.time || "-"}<br>
+👛 ${c.addr?.slice(0,6)}...${c.addr?.slice(-4)}<br>
+💰 ${c.amount || "-"}
+</div>
+`;
+});
+
+document.getElementById("claimBox").innerHTML = html;
+
+}
+
+// ==============================
+// 📥 DOWNLOAD CSV
+// ==============================
+function downloadMembers(data){
+
+let csv = "Address,Name,Phone,Email,Amount,Date,Time\n";
+
+data.forEach(m=>{
+csv += `${m.addr || m},${m.name || ""},${m.phone || ""},${m.email || ""},${m.amount || ""},${m.date || ""},${m.time || ""}\n`;
+});
+
+const blob = new Blob([csv], { type: "text/csv" });
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+a.download = "members.csv";
+a.click();
+}
+
+// ==============================
+// 🎛️ DOWNLOAD TOGGLE
+// ==============================
+function showDownload(type){
+
+const btn = document.getElementById("downloadBtn");
+
+if(type === "members"){
+    btn.classList.remove("hidden");
+}else{
+    btn.classList.add("hidden");
+}
+
+}    
+
+   
 // ==============================
 // 🔍 SEARCH USER (SERVER ONLY)
 // ==============================
@@ -1455,10 +1643,15 @@ if(!res.ok){
 const data = await res.json();
 
 // 🔹 SAFE RENDER (no crash)
-renderBoard("topStakers", data.topStakers || []);
-renderBoard("topTeam", data.topTeam || []);
-renderBoard("topDirect", data.topDirect || []);
-renderBoard("topEarners", data.topEarners || []);
+topStakersData = [...arr].sort((a,b)=>b.stake-a.stake);
+topTeamData = [...arr].sort((a,b)=>b.teamVol-a.teamVol);
+topDirectData = [...arr].sort((a,b)=>b.directVol-a.directVol);
+topEarnersData = [...arr].sort((a,b)=>b.earned-a.earned);
+
+renderBoard("topStakers", topStakersData);
+renderBoard("topTeam", topTeamData);
+renderBoard("topDirect", topDirectData);
+renderBoard("topEarners", topEarnersData);
 
 }catch(e){
 
@@ -1814,85 +2007,59 @@ async function checkAutoSwapStatus(){
     }
 }
 
+
 // ==============================
-// 💰 TRANSACTIONS
+// 🔥 FULL VIEW POPUP
 // ==============================
-async function loadTransactions(){
-
-try{
-const res = await fetch("/api/transactions");
-
-if(!res.ok){
-    throw new Error();
-}
-
-const data = await res.json();
-
-if(!data.length){
-document.getElementById("txBox").innerHTML = "No Transactions";
-return;
-}
+function openFullView(data){
 
 let html = "";
 
-data.forEach(t=>{
-html += `
-<div class="border-b border-white/10 py-2">
-📅 ${t.date || "-"} ⏰ ${t.time || "-"}<br>
-👛 ${t.addr?.slice(0,6)}...${t.addr?.slice(-4)}<br>
-💰 ${t.amount || "-"}
-</div>
-`;
+data.forEach((m,i)=>{
+
+    if(typeof m === "object"){
+
+        html += `
+        <div class="border-b border-white/10 py-3">
+
+        #${i+1}<br>
+
+        👛 ${m.addr?.slice(0,6)}...${m.addr?.slice(-4)}<br>
+
+        👤 ${m.name || "N/A"}<br>
+
+        📞 ${m.phone || "N/A"}<br>
+
+        📧 ${m.email || "N/A"}<br>
+
+        📅 ${m.date || "-"} ⏰ ${m.time || "-"}<br>
+
+        💰 ${m.amount || "-"}
+        
+        </div>
+        `;
+    }
+    else{
+
+        html += `
+        <div class="border-b border-white/10 py-2">
+        #${i+1} 👛 ${m}
+        </div>
+        `;
+    }
+
 });
 
-document.getElementById("txBox").innerHTML = html;
-
-}catch(e){
-document.getElementById("txBox").innerHTML = "⚠️ Waiting for server...";
-}
+document.getElementById("popupContent").innerHTML = html;
+document.getElementById("popup").classList.remove("hidden");
 
 }
 
-
-// ==============================
-// 🪙 CLAIM HISTORY
-// ==============================
-async function loadClaims(){
-
-try{
-const res = await fetch("/api/claims");
-
-if(!res.ok){
-    throw new Error();
+// 🔥 CLOSE
+function closePopup(){
+    document.getElementById("popup").classList.add("hidden");
 }
-
-const data = await res.json();
-
-if(!data.length){
-document.getElementById("claimBox").innerHTML = "No Claims";
-return;
-}
-
-let html = "";
-
-data.forEach(c=>{
-html += `
-<div class="border-b border-white/10 py-2">
-📅 ${c.date || "-"} ⏰ ${c.time || "-"}<br>
-👛 ${c.addr?.slice(0,6)}...${c.addr?.slice(-4)}<br>
-💰 ${c.amount || "-"}
-</div>
-`;
-});
-
-document.getElementById("claimBox").innerHTML = html;
-
-}catch(e){
-document.getElementById("claimBox").innerHTML = "⚠️ Waiting for server...";
-}
-
-}
-   
+ 
           
 </script>  
 </body>  
