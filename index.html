@@ -1360,12 +1360,15 @@ async function setPrice() {
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        // 🔥 DISABLE BUTTON (prevent double click)
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.setManualPrice(
@@ -1379,10 +1382,12 @@ async function setPrice() {
         console.error(e);
         alert("Price update failed");
     }finally{
-        // 🔄 ENABLE BACK
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "SET";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "SET";
+        }
     }
 }
 
@@ -1408,12 +1413,15 @@ async function setBonuses() {
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        // 🔥 disable button
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         // 🔹 DIRECT %
         if(dirPct){
@@ -1445,9 +1453,12 @@ async function setBonuses() {
         console.error(e);
         alert("Update failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Set";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Set";
+        }
     }
 }
   
@@ -1493,11 +1504,15 @@ async function manualReward(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.manualReward(addr, Number(amt), reason)
@@ -1509,9 +1524,12 @@ async function manualReward(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Send Reward";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Send Reward";
+        }
     }
 }
   
@@ -1549,11 +1567,15 @@ async function setLevelPct(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.setLevelPercent(
@@ -1568,9 +1590,12 @@ async function setLevelPct(){
         console.error(e);
         alert("Update failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Set %";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Set %";
+        }
     }
 }
 
@@ -1613,37 +1638,44 @@ async function setLevelRule(){
         return;
     }
 
-try{
+    const btn = event?.target;
 
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerText = "Processing...";
+    try{
 
-    // 🔹 STEP 1
-    const tx1 = await contract.setUnlockMode(mode);
-    await tx1.wait();
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
-    // 🔹 STEP 2
-    let tx2;
+        // 🔹 STEP 1
+        const tx1 = await contract.setUnlockMode(mode);
+        await tx1.wait();
 
-    if(mode === 1){
-        tx2 = await contract.setLevelDirectRequired(level, value);
-    }else{
-        tx2 = await contract.setLevelUnlockVolume(level, value);
+        // 🔹 STEP 2
+        let tx2;
+
+        if(mode === 1){
+            tx2 = await contract.setLevelDirectRequired(level, value);
+        }else{
+            tx2 = await contract.setLevelUnlockVolume(level, value);
+        }
+
+        await tx2.wait();
+
+        alert("Unlock Rule Applied ✅");
+
+    }catch(e){
+        console.error(e);
+        alert("Update failed");
+    }finally{
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Apply";
+        }
     }
-
-    await tx2.wait();
-
-    alert("Unlock Rule Applied ✅");
-
-}catch(e){
-    console.error(e);
-    alert("Update failed");
-}finally{
-    const btn = event.target;
-    btn.disabled = false;
-    btn.innerText = "Apply";
-}
 }
   
 async function giveRank(){
@@ -1694,11 +1726,15 @@ Rank: ${rank}
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.giveRankReward(addr, Number(amt), rank)
@@ -1710,9 +1746,12 @@ Rank: ${rank}
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Give Rank";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Give Rank";
+        }
     }
 }
           
@@ -2309,11 +2348,15 @@ Are you sure?
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Updating...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Updating...";
+        }
 
         await txWrap(
             contract.changeTreasury(addr)
@@ -2325,9 +2368,12 @@ Are you sure?
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Update Treasury Wallet";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Update Treasury Wallet";
+        }
     }
 }
   
@@ -2368,11 +2414,15 @@ async function postAnn() {
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Posting...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Posting...";
+        }
 
         await txWrap(
             contract.postAnnouncement(msg, img || "")
@@ -2384,9 +2434,12 @@ async function postAnn() {
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "POST ANNOUNCEMENT";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "POST ANNOUNCEMENT";
+        }
     }
 }
   
@@ -2418,11 +2471,15 @@ async function unlLevel(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.unlockLevelManually(addr, Number(days))
@@ -2434,9 +2491,12 @@ async function unlLevel(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Unlock";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Unlock";
+        }
     }
 }
 
@@ -2469,11 +2529,15 @@ async function setCustCap(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Setting...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Setting...";
+        }
 
         await txWrap(
             contract.setCustomCap(addr, Number(cap))
@@ -2485,9 +2549,12 @@ async function setCustCap(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Set Cap";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Set Cap";
+        }
     }
 }
 
@@ -2509,11 +2576,15 @@ async function resCap(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Resetting...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Resetting...";
+        }
 
         await txWrap(
             contract.resetCap(addr)
@@ -2525,11 +2596,14 @@ async function resCap(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Reset 4X";
-    }
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Reset 4X";
         }
+    }
+}
 
     
     async function setPause(state){
@@ -2546,11 +2620,15 @@ async function resCap(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             state ? contract.pause() : contract.unpause()
@@ -2562,9 +2640,12 @@ async function resCap(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = state ? "Pause Contract" : "Unpause Contract";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = state ? "Pause Contract" : "Unpause Contract";
+        }
     }
 }
 
@@ -2594,11 +2675,15 @@ You will LOSE admin control.
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Transferring...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Transferring...";
+        }
 
         await txWrap(
             contract.transferOwnership(addr)
@@ -2610,11 +2695,14 @@ You will LOSE admin control.
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Transfer Ownership";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Transfer Ownership";
+        }
     }
-     }
+}
 
  async function renounceOwn(){
 
@@ -2640,11 +2728,15 @@ Type YES to continue.
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.renounceOwnership()
@@ -2656,11 +2748,14 @@ Type YES to continue.
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Renounce Ownership";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Renounce Ownership";
+        }
     }
-    }
+}
 
  async function togglePrice(){
 
@@ -2669,7 +2764,6 @@ Type YES to continue.
     try{
 
         const current = await contract.isManualPrice();
-
         const next = !current;
 
         const msg = next 
@@ -2684,9 +2778,13 @@ Type YES to continue.
             return;
         }
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Updating...";
+        const btn = event?.target;
+
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Updating...";
+        }
 
         await txWrap(
             contract.toggleManualPrice(next)
@@ -2694,15 +2792,23 @@ Type YES to continue.
 
         alert("Price Mode Updated ✅");
 
+        // 🔥 OPTIONAL: update label based on mode
+        if(btn){
+            btn.innerText = next ? "MANUAL" : "LIVE";
+        }
+
     }catch(e){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "LIVE";
+
+        // 🔄 SAFE ENABLE BACK
+        const btn = event?.target;
+        if(btn){
+            btn.disabled = false;
+        }
     }
- }   
+}
 
 async function emgWithdraw(){
 
@@ -2731,17 +2837,21 @@ async function emgWithdraw(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.emergencyWithdrawToken(
                 token,
                 to,
-                ethers.utils.parseUnits(amt, 18)
+                ethers.utils.parseUnits(amt.toString(), 18)
             )
         );
 
@@ -2751,9 +2861,12 @@ async function emgWithdraw(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Recover Tokens";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Recover Tokens";
+        }
     }
 }
 
@@ -2774,15 +2887,19 @@ async function emgWithdraw(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+        }
 
         await txWrap(
             contract.rescueETH(
-                ethers.utils.parseEther(amt)
+                ethers.utils.parseEther(amt.toString())
             )
         );
 
@@ -2792,9 +2909,12 @@ async function emgWithdraw(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "Rescue BNB";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Rescue BNB";
+        }
     }
 }
 
@@ -2821,14 +2941,18 @@ async function emgWithdraw(){
         return;
     }
 
+    const btn = event?.target;
+
     try{
 
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Updating...";
+        // 🔥 SAFE BUTTON CONTROL
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Updating...";
+        }
 
         await txWrap(
-            contract.setMaintenanceUnit(val)
+            contract.setMaintenanceUnit(Number(val))
         );
 
         alert("Maintenance Updated ✅");
@@ -2837,15 +2961,20 @@ async function emgWithdraw(){
         console.error(e);
         alert("Transaction failed");
     }finally{
-        const btn = event.target;
-        btn.disabled = false;
-        btn.innerText = "SET";
+
+        // 🔄 SAFE ENABLE BACK
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "SET";
+        }
     }
 }
 
 async function toggleAutoSwap(state){
 
     if(!contract) return;
+
+    const btn = event?.target;
 
     try{
 
@@ -2864,9 +2993,24 @@ async function toggleAutoSwap(state){
 
         if(!confirm(msg)) return;
 
-        await txWrap(contract.toggleAutoSwap(state));
+        // 🔹 GAS CHECK
+        const bal = await provider.getBalance(userAddress);
+        if(bal.lt(ethers.utils.parseEther("0.003"))){
+            alert("Low BNB for gas");
+            return;
+        }
 
-        // 🔥 INSTANT UPDATE
+        // 🔥 BUTTON LOCK
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Updating...";
+        }
+
+        await txWrap(
+            contract.toggleAutoSwap(state)
+        );
+
+        // 🔥 INSTANT UI UPDATE
         if(state){
             autoSwapText = "<span class='text-yellow-400'>[AUTO SWAP ON]</span>";
         }else{
@@ -2875,9 +3019,18 @@ async function toggleAutoSwap(state){
 
         updateAdminStatus();
 
+        alert("AutoSwap Updated ✅");
+
     }catch(e){
         console.error(e);
         alert("AutoSwap update failed");
+    }finally{
+
+        // 🔄 BUTTON RESET
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = state ? "Disable AutoSwap" : "Enable AutoSwap";
+        }
     }
 }
     
@@ -2889,15 +3042,15 @@ async function checkAutoSwapStatus(){
 
         const mode = await contract.autoSwapEnabled();
 
-        // 🔹 SAVE ONLY
-        if(mode){
-            autoSwapText = "<span class='text-yellow-400'>[AUTO SWAP ON]</span>";
-        }else{
-            autoSwapText = "<span class='text-gray-400'>[AUTO SWAP OFF]</span>";
-        }
+        const newText = mode
+            ? "<span class='text-yellow-400'>[AUTO SWAP ON]</span>"
+            : "<span class='text-gray-400'>[AUTO SWAP OFF]</span>";
 
-        // 🔥 SINGLE UI UPDATE
-        updateAdminStatus();
+        // 🔥 ONLY UPDATE IF CHANGED (performance boost)
+        if(autoSwapText !== newText){
+            autoSwapText = newText;
+            updateAdminStatus();
+        }
 
     }catch(e){
         console.warn("AutoSwap status error");
@@ -2910,51 +3063,61 @@ async function checkAutoSwapStatus(){
 // ==============================
 function openFullView(data){
 
-let html = "";
+    let html = "";
 
-data.forEach((m,i)=>{
+    data.forEach((m,i)=>{
 
-    if(typeof m === "object"){
+        if(typeof m === "object" && m !== null){
 
-        html += `
-        <div class="border-b border-white/10 py-3">
+            const addr = m.addr 
+                ? m.addr.slice(0,6) + "..." + m.addr.slice(-4) 
+                : "N/A";
 
-        #${i+1}<br>
+            html += `
+            <div class="border-b border-white/10 py-3">
 
-        👛 ${m.addr?.slice(0,6)}...${m.addr?.slice(-4)}<br>
+            #${i+1}<br>
 
-        👤 ${m.name || "N/A"}<br>
+            👛 ${addr}<br>
 
-        📞 ${m.phone || "N/A"}<br>
+            👤 ${m.name || "N/A"}<br>
 
-        📧 ${m.email || "N/A"}<br>
+            📞 ${m.phone || "N/A"}<br>
 
-        📅 ${m.date || "-"} ⏰ ${m.time || "-"}<br>
+            📧 ${m.email || "N/A"}<br>
 
-        💰 ${m.amount || "-"}
-        
-        </div>
-        `;
-    }
-    else{
+            📅 ${m.date || "-"} ⏰ ${m.time || "-"}<br>
 
-        html += `
-        <div class="border-b border-white/10 py-2">
-        #${i+1} 👛 ${m}
-        </div>
-        `;
-    }
+            💰 ${m.amount || "-"}
 
-});
+            </div>
+            `;
+        }
+        else{
 
-document.getElementById("popupContent").innerHTML = html;
-document.getElementById("popup").classList.remove("hidden");
+            html += `
+            <div class="border-b border-white/10 py-2">
+            #${i+1} 👛 ${m || "N/A"}
+            </div>
+            `;
+        }
 
+    });
+
+    const popupContent = document.getElementById("popupContent");
+    const popup = document.getElementById("popup");
+
+    if(popupContent) popupContent.innerHTML = html;
+    if(popup) popup.classList.remove("hidden");
 }
+
 
 // 🔥 CLOSE
 function closePopup(){
-    document.getElementById("popup").classList.add("hidden");
+
+    const popup = document.getElementById("popup");
+
+    if(popup) popup.classList.add("hidden");
 }
  
           
