@@ -1994,146 +1994,184 @@ function showDownload(type){
 
    
 // ==============================
-// 🔍 SEARCH USER (SERVER ONLY)
+// 🔍 SEARCH USER (SERVER ONLY - SAFE FINAL)
 // ==============================
 async function searchUser(){
 
-try{
+    try{
 
-const addr = document.getElementById("searchUser").value;
+        const input = document.getElementById("searchUser");
+        const resultBox = document.getElementById("userResult");
 
-if(!ethers.utils.isAddress(addr)){
-alert("Invalid wallet address");
-return;
-}
+        if(!input || !resultBox) return;
 
-// 🔹 SERVER CALL
-const res = await fetch(`/api/user?addr=${addr}`);
+        const addr = input.value.trim();
 
-if(!res.ok){
-    throw new Error("User not found");
-}
+        // 🔒 ADDRESS VALIDATION
+        if(!ethers.utils.isAddress(addr)){
+            alert("Invalid wallet address");
+            return;
+        }
 
-const data = await res.json();
+        // 🔹 LOADING UI
+        resultBox.innerHTML = "Loading...";
 
-// 🔹 CLAIM HISTORY FORMAT
-let claimHTML = "";
+        // 🔹 SERVER CALL
+        const res = await fetch(`/api/user?addr=${addr}`);
 
-if(data.claims && data.claims.length > 0){
+        if(!res.ok){
+            throw new Error("User not found");
+        }
 
-for(let i = data.claims.length - 1; i >= 0 && i > data.claims.length - 6; i--){
+        const data = await res.json();
 
-    const c = data.claims[i];
+        // 🔹 SAFE FORMAT FUNCTION
+        const val = (v) => (v ?? 0);
 
-    claimHTML += `
-    <div class="text-xs text-gray-300">
-    ${c.amount} DMX | ${c.time}
-    </div>
-    `;
-}
+        // 🔹 CLAIM HISTORY
+        let claimHTML = "";
 
-}else{
-claimHTML = "<div>No claim history</div>";
-}
+        if(data.claims && data.claims.length > 0){
 
-// 🔹 UI RENDER
-document.getElementById("userResult").innerHTML = `
-<div class="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg space-y-1">
+            const start = Math.max(0, data.claims.length - 5);
 
-<p>Total Staked: <span class="text-white">${data.totalStaked} DMX</span></p>
+            for(let i = data.claims.length - 1; i >= start; i--){
 
-<p>Total Earned: <span class="text-white">${data.totalEarned} DMX</span></p>
+                const c = data.claims[i] || {};
 
-<p>Direct Income: <span class="text-white">${data.directIncome} DMX</span></p>
+                claimHTML += `
+                <div class="text-xs text-gray-300">
+                ${val(c.amount)} DMX | ${c.time || "-"}
+                </div>
+                `;
+            }
 
-<p>Level Income: <span class="text-white">${data.levelIncome} DMX</span></p>
+        }else{
+            claimHTML = "<div class='text-gray-400 text-xs'>No claim history</div>";
+        }
 
-<p>Direct Business: <span class="text-white">${data.directVol} DMX</span></p>
+        // 🔹 UI RENDER (SAFE)
+        resultBox.innerHTML = `
+        <div class="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg space-y-1">
 
-<p>Team Business: <span class="text-white">${data.teamVol} DMX</span></p>
+        <p>Total Staked: <span class="text-white">${val(data.totalStaked)} DMX</span></p>
 
-<p>Claimable: <span class="text-white">${data.claimable} DMX</span></p>
+        <p>Total Earned: <span class="text-white">${val(data.totalEarned)} DMX</span></p>
 
-<p class="text-yellow-400 font-bold">
-Income Cap: ${data.cap} DMX
-</p>
+        <p>Direct Income: <span class="text-white">${val(data.directIncome)} DMX</span></p>
 
-<hr class="border-white/10 my-2">
+        <p>Level Income: <span class="text-white">${val(data.levelIncome)} DMX</span></p>
 
-<p class="text-green-400 font-bold">Recent Claims:</p>
+        <p>Direct Business: <span class="text-white">${val(data.directVol)} DMX</span></p>
 
-${claimHTML}
+        <p>Team Business: <span class="text-white">${val(data.teamVol)} DMX</span></p>
 
-</div>
-`;
+        <p>Claimable: <span class="text-white">${val(data.claimable)} DMX</span></p>
 
-}catch(e){
+        <p class="text-yellow-400 font-bold">
+        Income Cap: ${val(data.cap)} DMX
+        </p>
 
-console.warn("Search:", e.message);
+        <hr class="border-white/10 my-2">
 
-document.getElementById("userResult").innerHTML =
-"⚠️ Server offline or user not found";
+        <p class="text-green-400 font-bold">Recent Claims:</p>
 
-}
+        ${claimHTML}
 
+        </div>
+        `;
+
+    }catch(e){
+
+        console.warn("Search:", e.message);
+
+        const resultBox = document.getElementById("userResult");
+        if(resultBox){
+            resultBox.innerHTML =
+            "⚠️ Server offline or user not found";
+        }
+    }
 }
     
 // ==============================
-// 🔥 LEADERBOARD (SERVER ONLY)
+// 🔥 LEADERBOARD (SERVER ONLY - FINAL SAFE)
 // ==============================
 async function loadLeaderboards(){
 
-try{
-
-// 🔹 LOADING UI
-document.getElementById("topStakers").innerHTML = "Loading...";
-document.getElementById("topTeam").innerHTML = "";
-document.getElementById("topDirect").innerHTML = "";
-document.getElementById("topEarners").innerHTML = "";
-
-// 🔹 SERVER CALL ONLY
-const res = await fetch("/api/leaderboard");
-
-// 🔹 SERVER NOT READY → SAFE EXIT
-if(!res.ok){
-    throw new Error("Server not ready");
-}
-
-const data = await res.json();
-
-const arr = data;
-
-topStakersData = [...arr].sort((a,b)=>b.stake-a.stake);
-topTeamData = [...arr].sort((a,b)=>b.teamVol-a.teamVol);
-topDirectData = [...arr].sort((a,b)=>b.directVol-a.directVol);
-topEarnersData = [...arr].sort((a,b)=>b.earned-a.earned);
-
-renderBoard("topStakers", topStakersData);
-renderBoard("topTeam", topTeamData);
-renderBoard("topDirect", topDirectData);
-renderBoard("topEarners", topEarnersData);
-
-}catch(e){
-
-console.warn("Leaderboard:", e.message);
-
-// 🔹 SAFE UI (no error break)
-document.getElementById("topStakers").innerHTML = "⚠️ Waiting for server...";
-document.getElementById("topTeam").innerHTML = "";
-document.getElementById("topDirect").innerHTML = "";
-document.getElementById("topEarners").innerHTML = "";
-
-}
-
-}
-  
-async function updateSwapMode(state){
-
-    if(!contract) return;
+    const stakersBox = document.getElementById("topStakers");
+    const teamBox = document.getElementById("topTeam");
+    const directBox = document.getElementById("topDirect");
+    const earnersBox = document.getElementById("topEarners");
 
     try{
 
-        // 🔍 current mode
+        // 🔹 DOM SAFETY
+        if(!stakersBox || !teamBox || !directBox || !earnersBox){
+            console.warn("Leaderboard DOM missing");
+            return;
+        }
+
+        // 🔹 LOADING UI
+        stakersBox.innerHTML = "Loading...";
+        teamBox.innerHTML = "";
+        directBox.innerHTML = "";
+        earnersBox.innerHTML = "";
+
+        // 🔹 SERVER CALL
+        const res = await fetch("/api/leaderboard");
+
+        if(!res.ok){
+            throw new Error("Server not ready");
+        }
+
+        const data = await res.json();
+
+        // 🔒 SAFE ARRAY CHECK
+        if(!Array.isArray(data) || data.length === 0){
+            stakersBox.innerHTML = "No Data";
+            return;
+        }
+
+        // 🔒 SAFE VALUE HANDLER
+        const val = (v) => Number(v) || 0;
+
+        // 🔹 SORT DATA (SAFE)
+        topStakersData = [...data].sort((a,b)=> val(b.stake) - val(a.stake));
+        topTeamData    = [...data].sort((a,b)=> val(b.teamVol) - val(a.teamVol));
+        topDirectData  = [...data].sort((a,b)=> val(b.directVol) - val(a.directVol));
+        topEarnersData = [...data].sort((a,b)=> val(b.earned) - val(a.earned));
+
+        // 🔹 RENDER
+        renderBoard("topStakers", topStakersData);
+        renderBoard("topTeam", topTeamData);
+        renderBoard("topDirect", topDirectData);
+        renderBoard("topEarners", topEarnersData);
+
+    }catch(e){
+
+        console.warn("Leaderboard:", e.message);
+
+        // 🔹 SAFE UI
+        if(stakersBox) stakersBox.innerHTML = "⚠️ Waiting for server...";
+        if(teamBox) teamBox.innerHTML = "";
+        if(directBox) directBox.innerHTML = "";
+        if(earnersBox) earnersBox.innerHTML = "";
+    }
+}
+  
+// ==============================
+// 🔄 UPDATE SWAP MODE (FINAL SAFE)
+// ==============================
+async function updateSwapMode(state){
+
+    if(!contract || !provider || !userAddress){
+        alert("Connect wallet first");
+        return;
+    }
+
+    try{
+
+        // 🔍 CURRENT MODE
         const current = await contract.pancakeSwapEnabled();
 
         // ❌ SAME MODE BLOCK
@@ -2149,11 +2187,18 @@ async function updateSwapMode(state){
 
         if(!confirm(msg)) return;
 
-        // 💰 GAS CHECK (optional but recommended)
+        // 💰 GAS CHECK
         const balance = await provider.getBalance(userAddress);
         if(balance.lt(ethers.utils.parseEther("0.003"))){
             alert("Low BNB for gas");
             return;
+        }
+
+        // 🔘 BUTTON SAFE (optional UI)
+        const btn = event?.target;
+        if(btn){
+            btn.disabled = true;
+            btn.innerText = "Processing...";
         }
 
         // 🚀 TX
@@ -2161,83 +2206,118 @@ async function updateSwapMode(state){
             contract.togglePancakeSwap(state)
         );
 
-        // 🔥 INSTANT UI UPDATE
+        // 🔥 UI TEXT FORMAT (CONSISTENT)
         if(state){
-            swapModeText = "[PANCAKE MODE]";
+            swapModeText = "<span class='text-green-400'>[PANCAKE MODE]</span>";
         }else{
-            swapModeText = "[INTERNAL SWAP]";
+            swapModeText = "<span class='text-blue-400'>[INTERNAL SWAP]</span>";
         }
 
-        updateAdminStatus();
+        // 🔄 UPDATE STATUS
+        if(typeof updateAdminStatus === "function"){
+            updateAdminStatus();
+        }
 
     }catch(e){
-        console.error(e);
-        alert("Failed to update swap mode");
+
+        console.error("Swap mode error:", e);
+        alert(e?.reason || e?.message || "Failed to update swap mode");
+
+    }finally{
+
+        // 🔘 BUTTON RESET
+        const btn = event?.target;
+        if(btn){
+            btn.disabled = false;
+            btn.innerText = "Update Swap Mode";
+        }
     }
-}  
-  
-  
-// CONTRACT LIQUIDITY  
+}
+   
 
-async function loadLiquidity(){  
+// ==============================
+// 💧 LOAD LIQUIDITY (FINAL SAFE)
+// ==============================
+async function loadLiquidity(){
 
-if(!contract) return;  
+    if(!contract || !provider) return;
 
-try{  
+    try{
 
-const usdtAddr = await contract.usdt();  
-const dmxAddr = await contract.dmx();  
+        const usdtEl = document.getElementById("statContractUSDT");
+        const dmxEl = document.getElementById("statContractDMXLiquidity");
+        const statusEl = document.getElementById("adminStatus");
 
-const usdtToken = new ethers.Contract(  
-usdtAddr,  
-["function balanceOf(address) view returns(uint256)"],  
-provider  
-);  
+        if(!usdtEl || !dmxEl || !statusEl){
+            console.warn("Liquidity DOM missing");
+            return;
+        }
 
-const dmxToken = new ethers.Contract(  
-dmxAddr,  
-["function balanceOf(address) view returns(uint256)"],  
-provider  
-);  
+        // 🔹 TOKEN ADDRESSES
+        const usdtAddr = await contract.usdt();
+        const dmxAddr = await contract.dmx();
 
-const usdtBal = await usdtToken.balanceOf(contractAddress);  
-const dmxBal = await dmxToken.balanceOf(contractAddress);  
+        // 🔹 TOKEN CONTRACTS
+        const usdtToken = new ethers.Contract(
+            usdtAddr,
+            ["function balanceOf(address) view returns(uint256)"],
+            provider
+        );
 
-// UI UPDATE
-document.getElementById("statContractUSDT").innerText =  
-Number(ethers.utils.formatUnits(usdtBal,18)).toLocaleString();  
+        const dmxToken = new ethers.Contract(
+            dmxAddr,
+            ["function balanceOf(address) view returns(uint256)"],
+            provider
+        );
 
-document.getElementById("statContractDMXLiquidity").innerText =
-Number(ethers.utils.formatEther(dmxBal)).toLocaleString();  
+        // 🔹 BALANCES
+        const [usdtBal, dmxBal] = await Promise.all([
+            usdtToken.balanceOf(contractAddress),
+            dmxToken.balanceOf(contractAddress)
+        ]);
 
+        // 🔥 DECIMAL SAFE (USDT = 18 in your contract config)
+        const usdtValue = Number(ethers.utils.formatUnits(usdtBal, 18));
+        const dmxValue = Number(ethers.utils.formatEther(dmxBal));
 
-// 🔥 LOW LIQUIDITY WARNING (NO DUPLICATE)
-const dmxValue = Number(ethers.utils.formatEther(dmxBal));
+        // 🔹 UI UPDATE
+        usdtEl.innerText = usdtValue.toLocaleString();
+        dmxEl.innerText = dmxValue.toLocaleString();
 
-const statusEl = document.getElementById("adminStatus");
+        // ==============================
+        // 🚨 LOW LIQUIDITY WARNING
+        // ==============================
 
-// remove old warning (clean)
-statusEl.innerHTML = statusEl.innerHTML.replace(/\[LOW DMX LIQUIDITY\]/g, "");
+        // remove old tag clean
+        statusEl.innerHTML = statusEl.innerHTML
+            .replace(/\[LOW DMX LIQUIDITY\]/g, "")
+            .replace(/\s+/g, " "); // clean spaces
 
-// add only once if needed
-if(dmxValue < 10000){
+        // add only if needed
+        if(dmxValue < 10000){
 
-    if(!statusEl.innerHTML.includes("LOW DMX")){
-        statusEl.innerHTML += 
-        " <span class='text-red-500'>[LOW DMX LIQUIDITY]</span>";
+            if(!statusEl.innerHTML.includes("LOW DMX")){
+                statusEl.innerHTML += 
+                " <span class='text-red-500'>[LOW DMX LIQUIDITY]</span>";
+            }
+        }
+
+    }catch(e){
+
+        console.error("Liquidity load error:", e);
+
+        const statusEl = document.getElementById("adminStatus");
+        if(statusEl && !statusEl.innerHTML.includes("LIQ ERROR")){
+            statusEl.innerHTML += 
+            " <span class='text-yellow-400'>[LIQ ERROR]</span>";
+        }
     }
-
 }
 
-}catch(e){  
-
-console.error("Liquidity load error",e);  
-
-}  
-
-}
-
   
+// ==============================
+// 🔄 CHECK SWAP STATUS (FINAL SAFE)
+// ==============================
 async function checkSwapStatus(){
 
     if(!contract) return;
@@ -2246,88 +2326,106 @@ async function checkSwapStatus(){
 
         const mode = await contract.pancakeSwapEnabled();
 
-        // 🔹 SAVE ONLY (NO UI DIRECT CHANGE)
+        // 🔒 SAFE UI TEXT
         if(mode){
-            swapModeText = "<span class='text-red-500'>[PANCAKE MODE]</span>";
+            swapModeText = "<span class='text-green-400'>[PANCAKE MODE]</span>";
         }else{
-            swapModeText = "<span class='text-green-500'>[INTERNAL SWAP]</span>";
+            swapModeText = "<span class='text-blue-400'>[INTERNAL SWAP]</span>";
         }
 
-        // 🔥 ONE PLACE UPDATE
-        updateAdminStatus();
+        // 🔄 SINGLE UPDATE POINT
+        if(typeof updateAdminStatus === "function"){
+            updateAdminStatus();
+        }
 
     }catch(e){
-        console.warn("Swap status error");
+
+        console.warn("Swap status error:", e);
+
+        // 🔹 OPTIONAL STATUS FLAG (NO SPAM)
+        const statusEl = document.getElementById("adminStatus");
+
+        if(statusEl && !statusEl.innerHTML.includes("SWAP ERROR")){
+            statusEl.innerHTML += 
+            " <span class='text-yellow-400'>[SWAP ERROR]</span>";
+        }
     }
-}  
+}
     
-        // ---------- RENDER BOARD ----------  
-function renderBoard(id,data){  
-  
-let html="";  
-  
-for(let i=0;i<10 && i<data.length;i++){  
-  
-html+=`  
-  
-<div class="p-3 border-b border-white/10">  
-  
-<div class="text-cyan-400 font-bold">  
-  
-${i+1}.   
-<a href="https://bscscan.com/address/${data[i].addr}" target="_blank">  
-  
-${data[i].addr.slice(0,6)}...${data[i].addr.slice(-4)}  
-  
-</a>  
-  
-</div>  
-  
-<div class="text-xs text-gray-300">  
-  
-Stake: ${data[i].stake.toLocaleString()} DMX  
-  
-</div>  
-  
-<div class="text-xs text-gray-300">  
-  
-Direct Business: ${data[i].directVol.toLocaleString()} DMX  
-  
-</div>  
-  
-<div class="text-xs text-gray-300">  
-  
-Team Business: ${data[i].teamVol.toLocaleString()} DMX  
-  
-</div>  
-  
-<div class="text-xs text-gray-300">  
-  
-Earned: ${data[i].earned.toLocaleString()} DMX  
-  
-</div>  
-  
-<div class="text-xs text-gray-300">  
-  
-Claimable: ${data[i].claimable.toLocaleString()} DMX  
-  
-</div>  
-  
-<div class="text-xs text-yellow-400">  
-  
-Cap: ${data[i].cap.toLocaleString()} DMX  
-  
-</div>  
-  
-</div>  
-  
-`;  
-  
-}  
-  
-document.getElementById(id).innerHTML = html || "No data";  
-  
-}  
+         
+// ==============================
+// 🏆 RENDER LEADERBOARD (FINAL SAFE)
+// ==============================
+function renderBoard(id, data){
+
+    const box = document.getElementById(id);
+    if(!box) return;
+
+    // 🔒 SAFE VALUE
+    const val = (v) => Number(v) || 0;
+
+    // 🔒 SAFE ADDRESS
+    const shortAddr = (addr) =>
+        addr ? addr.slice(0,6) + "..." + addr.slice(-4) : "N/A";
+
+    let html = "";
+
+    if(!Array.isArray(data) || data.length === 0){
+        box.innerHTML = "No data";
+        return;
+    }
+
+    for(let i = 0; i < 10 && i < data.length; i++){
+
+        const u = data[i] || {};
+
+        html += `
+
+        <div class="p-3 border-b border-white/10">
+
+        <div class="text-cyan-400 font-bold">
+
+        ${i+1}. 
+        ${
+            u.addr
+            ? `<a href="https://bscscan.com/address/${u.addr}" target="_blank">
+               ${shortAddr(u.addr)}
+               </a>`
+            : "N/A"
+        }
+
+        </div>
+
+        <div class="text-xs text-gray-300">
+        Stake: ${val(u.stake).toLocaleString()} DMX
+        </div>
+
+        <div class="text-xs text-gray-300">
+        Direct Business: ${val(u.directVol).toLocaleString()} DMX
+        </div>
+
+        <div class="text-xs text-gray-300">
+        Team Business: ${val(u.teamVol).toLocaleString()} DMX
+        </div>
+
+        <div class="text-xs text-gray-300">
+        Earned: ${val(u.earned).toLocaleString()} DMX
+        </div>
+
+        <div class="text-xs text-gray-300">
+        Claimable: ${val(u.claimable).toLocaleString()} DMX
+        </div>
+
+        <div class="text-xs text-yellow-400">
+        Cap: ${val(u.cap).toLocaleString()} DMX
+        </div>
+
+        </div>
+        `;
+    }
+
+    box.innerHTML = html;
+}
   
           
         // ---------- CHANGE TREASURY ----------  
