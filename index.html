@@ -976,6 +976,7 @@ clearInterval(reconnect);
     "function totalClaimedUSDT() view returns (uint256)",
     "function renounceOwnership()",
     "function setUnlockMode(uint256)",
+    "function usdtReceiver() view returns(address)",
     "function setLevelDirectRequired(uint256,uint256)"
 ];  
   
@@ -2428,18 +2429,37 @@ function renderBoard(id, data){
 }
   
           
-        // ---------- CHANGE TREASURY ----------  
+// ==============================
+// 🏦 CHANGE TREASURY (FINAL SAFE)
+// ==============================
 async function changeTreasury(){
 
-    const addr = document.getElementById("treasuryAddr").value.trim();
+    if(!contract || !provider || !userAddress){
+        alert("Connect wallet first");
+        return;
+    }
 
-    // 🔐 ADDRESS CHECK
+    const input = document.getElementById("treasuryAddr");
+    if(!input) return;
+
+    const addr = input.value.trim();
+
     if(!ethers.utils.isAddress(addr)){
         alert("Invalid wallet address");
         return;
     }
 
-    // ⚠️ CONFIRM (VERY IMPORTANT)
+    // ❌ SAME ADDRESS BLOCK
+    try{
+        const current = await contract.usdtReceiver?.();
+        if(current && current.toLowerCase() === addr.toLowerCase()){
+            alert("Already set to this address");
+            return;
+        }
+    }catch(e){
+        console.warn("Skip current treasury check");
+    }
+
     const confirmMsg = `
 ⚠️ CHANGE TREASURY WALLET
 
@@ -2453,7 +2473,6 @@ Are you sure?
 
     if(!confirm(confirmMsg)) return;
 
-    // 🔹 GAS CHECK
     const bal = await provider.getBalance(userAddress);
     if(bal.lt(ethers.utils.parseEther("0.003"))){
         alert("Low BNB for gas");
@@ -2464,7 +2483,6 @@ Are you sure?
 
     try{
 
-        // 🔥 SAFE BUTTON CONTROL
         if(btn){
             btn.disabled = true;
             btn.innerText = "Updating...";
@@ -2476,12 +2494,15 @@ Are you sure?
 
         alert("Treasury Updated ✅");
 
+        input.value = "";
+
     }catch(e){
+
         console.error(e);
-        alert("Transaction failed");
+        alert(e?.reason || e?.message || "Transaction failed");
+
     }finally{
 
-        // 🔄 SAFE ENABLE BACK
         if(btn){
             btn.disabled = false;
             btn.innerText = "Update Treasury Wallet";
