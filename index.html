@@ -1764,6 +1764,14 @@ let lastTxData = [];
 let lastClaimData = [];
 
 // ==============================
+// 🧠 HELPERS
+// ==============================
+const shortAddr = (addr) =>
+    addr ? addr.slice(0,6) + "..." + addr.slice(-4) : "N/A";
+
+const safe = (v) => `"${(v || "").toString().replace(/"/g,'""')}"`;
+
+// ==============================
 // 🧠 SAFE FETCH (SERVER + FALLBACK)
 // ==============================
 async function fetchSafe(url, fallbackFn) {
@@ -1778,15 +1786,17 @@ async function fetchSafe(url, fallbackFn) {
 
         console.warn("Server failed → fallback");
 
-        // 🔥 optional alert (only once)
         const status = document.getElementById("adminStatus");
         if(status && !status.innerHTML.includes("SERVER OFFLINE")){
             status.innerHTML += 
             " <span class='text-yellow-400'>[SERVER OFFLINE]</span>";
         }
 
-        // 🔁 fallback
-        return fallbackFn ? await fallbackFn() : [];
+        try{
+            return fallbackFn ? await fallbackFn() : [];
+        }catch{
+            return [];
+        }
     }
 }
 
@@ -1795,71 +1805,73 @@ async function fetchSafe(url, fallbackFn) {
 // ==============================
 async function loadMembers(){
 
-const members = await fetchSafe(
-    "/api/members",
-    () => contract.getMembersList()
-);
+    const members = await fetchSafe(
+        "/api/members",
+        () => contract.getMembersList()
+    );
 
-lastMembersData = members;
-renderMembers();
-
+    lastMembersData = members;
+    renderMembers();
 }
 
 function renderMembers(){
 
-let html = "";
+    let html = "";
 
-for(let i=0; i<Math.min(memberLimit, lastMembersData.length); i++){
+    for(let i=0; i<Math.min(memberLimit, lastMembersData.length); i++){
 
-    const m = lastMembersData[i];
+        const m = lastMembersData[i];
 
-    if(typeof m === "object"){
-        html += `
-        <div class="border-b border-white/10 py-3 space-y-1">
+        if(typeof m === "object" && m !== null){
 
-        👛 ${m.addr?.slice(0,6)}...${m.addr?.slice(-4)}
+            html += `
+            <div class="border-b border-white/10 py-3 space-y-1">
 
-        <div class="text-xs text-gray-400">
-        👤 ${m.name || "N/A"}
-        </div>
+            👛 ${shortAddr(m.addr)}
 
-        <div class="text-xs text-gray-400">
-        📞 ${m.phone || "N/A"}
-        </div>
+            <div class="text-xs text-gray-400">
+            👤 ${m.name || "N/A"}
+            </div>
 
-        <div class="text-xs text-gray-400">
-        📧 ${m.email || "N/A"}
-        </div>
+            <div class="text-xs text-gray-400">
+            📞 ${m.phone || "N/A"}
+            </div>
 
-        <div class="text-xs text-gray-500">
-        📅 ${m.date || "-"} ⏰ ${m.time || "-"}
-        </div>
+            <div class="text-xs text-gray-400">
+            📧 ${m.email || "N/A"}
+            </div>
 
-        <div class="text-xs text-yellow-400">
-        💰 ${m.amount || "-"}
-        </div>
+            <div class="text-xs text-gray-500">
+            📅 ${m.date || "-"} ⏰ ${m.time || "-"}
+            </div>
 
-        </div>
-        `;
-    } else {
-        html += `
-        <div class="border-b border-white/10 py-2">
-        👛 ${m}
-        </div>`;
+            <div class="text-xs text-yellow-400">
+            💰 ${m.amount || "-"}
+            </div>
+
+            </div>
+            `;
+        } else {
+            html += `
+            <div class="border-b border-white/10 py-2">
+            👛 ${shortAddr(m)}
+            </div>`;
+        }
     }
 
-}
+    if(lastMembersData.length > memberLimit){
+        html += `
+        <button id="loadMoreBtn"
+        class="mt-3 bg-blue-600 px-4 py-2 rounded w-full">
+        View More
+        </button>`;
+    }
 
-if(lastMembersData.length > memberLimit){
-    html += `
-    <button onclick="loadMoreMembers()" 
-    class="mt-3 bg-blue-600 px-4 py-2 rounded w-full">
-    View More
-    </button>`;
-}
+    const box = document.getElementById("membersBox");
+    if(box) box.innerHTML = html;
 
-document.getElementById("membersBox").innerHTML = html;
-
+    // 🔥 SAFE EVENT
+    document.getElementById("loadMoreBtn")?.addEventListener("click", loadMoreMembers);
 }
 
 function loadMoreMembers(){
@@ -1872,41 +1884,42 @@ function loadMoreMembers(){
 // ==============================
 async function loadMembersCount(){
 
-const count = await fetchSafe(
-    "/api/memberCount",
-    () => contract.getMembersCount()
-);
+    const count = await fetchSafe(
+        "/api/memberCount",
+        () => contract.getMembersCount()
+    );
 
-document.getElementById("memberCount").innerText = count;
-
-}    
+    const el = document.getElementById("memberCount");
+    if(el) el.innerText = count;
+}
 
 // ==============================
 // 💰 TRANSACTIONS
 // ==============================
 async function loadTransactions(){
 
-const data = await fetchSafe("/api/transactions");
+    const data = await fetchSafe("/api/transactions");
 
-if(!data.length){
-document.getElementById("txBox").innerHTML = "No Transactions";
-return;
-}
+    const box = document.getElementById("txBox");
 
-let html = "";
+    if(!data.length){
+        if(box) box.innerHTML = "No Transactions";
+        return;
+    }
 
-data.forEach(t=>{
-html += `
-<div class="border-b border-white/10 py-2">
-📅 ${t.date || "-"} ⏰ ${t.time || "-"}<br>
-👛 ${t.addr?.slice(0,6)}...${t.addr?.slice(-4)}<br>
-💰 ${t.amount || "-"}
-</div>
-`;
-});
+    let html = "";
 
-document.getElementById("txBox").innerHTML = html;
+    data.forEach(t=>{
+        html += `
+        <div class="border-b border-white/10 py-2">
+        📅 ${t.date || "-"} ⏰ ${t.time || "-"}<br>
+        👛 ${shortAddr(t.addr)}<br>
+        💰 ${t.amount || "-"}
+        </div>
+        `;
+    });
 
+    if(box) box.innerHTML = html;
 }
 
 // ==============================
@@ -1914,27 +1927,28 @@ document.getElementById("txBox").innerHTML = html;
 // ==============================
 async function loadClaims(){
 
-const data = await fetchSafe("/api/claims");
+    const data = await fetchSafe("/api/claims");
 
-if(!data.length){
-document.getElementById("claimBox").innerHTML = "No Claims";
-return;
-}
+    const box = document.getElementById("claimBox");
 
-let html = "";
+    if(!data.length){
+        if(box) box.innerHTML = "No Claims";
+        return;
+    }
 
-data.forEach(c=>{
-html += `
-<div class="border-b border-white/10 py-2">
-📅 ${c.date || "-"} ⏰ ${c.time || "-"}<br>
-👛 ${c.addr?.slice(0,6)}...${c.addr?.slice(-4)}<br>
-💰 ${c.amount || "-"}
-</div>
-`;
-});
+    let html = "";
 
-document.getElementById("claimBox").innerHTML = html;
+    data.forEach(c=>{
+        html += `
+        <div class="border-b border-white/10 py-2">
+        📅 ${c.date || "-"} ⏰ ${c.time || "-"}<br>
+        👛 ${shortAddr(c.addr)}<br>
+        💰 ${c.amount || "-"}
+        </div>
+        `;
+    });
 
+    if(box) box.innerHTML = html;
 }
 
 // ==============================
@@ -1942,41 +1956,41 @@ document.getElementById("claimBox").innerHTML = html;
 // ==============================
 function downloadMembers(data){
 
-// 🔒 EMPTY CHECK
-if(!data || data.length === 0){
-    alert("No data to download");
-    return;
+    if(!data || data.length === 0){
+        alert("No data to download");
+        return;
+    }
+
+    let csv = "Address,Name,Phone,Email,Amount,Date,Time\n";
+
+    data.forEach(m=>{
+        csv += `${safe(m.addr || m)},${safe(m.name)},${safe(m.phone)},${safe(m.email)},${safe(m.amount)},${safe(m.date)},${safe(m.time)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "members.csv";
+    a.click();
 }
 
-let csv = "Address,Name,Phone,Email,Amount,Date,Time\n";
-
-data.forEach(m=>{
-csv += `${m.addr || m},${m.name || ""},${m.phone || ""},${m.email || ""},${m.amount || ""},${m.date || ""},${m.time || ""}\n`;
-});
-
-const blob = new Blob([csv], { type: "text/csv" });
-const url = URL.createObjectURL(blob);
-
-const a = document.createElement("a");
-a.href = url;
-a.download = "members.csv";
-a.click();
-}
-    
 // ==============================
 // 🎛️ DOWNLOAD TOGGLE
 // ==============================
 function showDownload(type){
 
-const btn = document.getElementById("downloadBtn");
+    const btn = document.getElementById("downloadBtn");
 
-if(type === "members"){
-    btn.classList.remove("hidden");
-}else{
-    btn.classList.add("hidden");
+    if(!btn) return;
+
+    if(type === "members"){
+        btn.classList.remove("hidden");
+    }else{
+        btn.classList.add("hidden");
+    }
 }
-
-}    
 
    
 // ==============================
